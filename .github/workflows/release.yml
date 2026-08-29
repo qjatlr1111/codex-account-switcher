@@ -1,0 +1,91 @@
+name: Windows Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: .NET 8 준비
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Inno Setup 준비
+        shell: powershell
+        run: choco install innosetup --no-progress -y
+
+      - name: 버전 계산
+        id: version
+        shell: powershell
+        run: |
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '1.1.0' }
+          "value=$version" >> $env:GITHUB_OUTPUT
+
+      - name: 단일 EXE와 설치 파일 생성
+        shell: powershell
+        run: ./scripts/Build-Installer.ps1 -ApplicationVersion '${{ steps.version.outputs.value }}'
+
+      - name: 빌드 산출물 보관
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodexAccountSwitcher-Windows-x64
+          path: |
+            dist/CodexAccountSwitcher.exe
+            dist/CodexAccountSwitcher-Setup.exe
+            dist/SHA256SUMS.txt
+
+      - name: GitHub Release 게시
+        if: github.ref_type == 'tag'
+        # Windows PowerShell 5.1은 워크플로의 한글 문자열을 시스템 코드 페이지로
+        # 처리할 수 있으므로 UTF-8이 기본인 PowerShell 7을 사용합니다.
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $releaseNotes = @'
+          ## 주요 변경
+
+          - Windows 11 스타일의 투명 작업 표시줄 오버레이와 호버 애니메이션
+          - 계정 변경 확인 다이얼로그 및 단계별 진행 화면
+          - Codex 실행 감지, 독립적인 위젯 프로세스, 안정적인 재시작 처리
+          - 패키지 파일 가상화를 피하는 프로필 저장소 마이그레이션
+          - 프로필 저장 폴더 ACL 강화 및 민감 파일 Git 차단
+
+          ## 보안 및 호환성 안내
+
+          이 프로그램은 OpenAI의 공식 제품이 아닌 비공식 커뮤니티 도구입니다. Codex 호환성을 위해 계정별 `auth.json`이 로컬 디스크에 평문으로 저장되므로 공유 PC나 공용 Windows 계정에서는 사용하지 마세요. 배포 파일은 코드 서명되지 않았으며 Windows SmartScreen 경고가 표시될 수 있습니다. 내려받은 파일은 함께 제공되는 `SHA256SUMS.txt`로 확인할 수 있습니다.
+          '@
+          [System.IO.File]::WriteAllText(
+            (Join-Path $PWD 'dist/RELEASE_NOTES.md'),
+            $releaseNotes,
+            [System.Text.UTF8Encoding]::new($false)
+          )
+
+          $releaseAssets = @(
+            'dist/CodexAccountSwitcher.exe'
+            'dist/CodexAccountSwitcher-Setup.exe'
+            'dist/SHA256SUMS.txt'
+          )
+
+          if (gh release view "$env:GITHUB_REF_NAME" 2>$null) {
+            gh release edit "$env:GITHUB_REF_NAME" `
+              --title "Codex Account Switcher $env:GITHUB_REF_NAME" `
+              --notes-file dist/RELEASE_NOTES.md
+            gh release upload "$env:GITHUB_REF_NAME" $releaseAssets --clobber
+          }
+          else {
+            gh release create "$env:GITHUB_REF_NAME" $releaseAssets `
+              --title "Codex Account Switcher $env:GITHUB_REF_NAME" `
+              --notes-file dist/RELEASE_NOTES.md
+          }

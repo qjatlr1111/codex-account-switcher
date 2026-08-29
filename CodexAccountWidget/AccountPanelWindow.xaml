@@ -1,0 +1,248 @@
+<Window x:Class="CodexAccountWidget.AccountPanelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Codex 계정 목록"
+        Width="354" MaxHeight="560" SizeToContent="Height"
+        WindowStyle="None" ResizeMode="NoResize"
+        ShowInTaskbar="False" Topmost="True"
+        AllowsTransparency="True" Background="Transparent"
+        Deactivated="OnDeactivated">
+    <Window.Resources>
+        <LinearGradientBrush x:Key="AccountHoverBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#30FFFFFF" Offset="0"/>
+            <GradientStop Color="#20FFFFFF" Offset="0.48"/>
+            <GradientStop Color="#16FFFFFF" Offset="1"/>
+        </LinearGradientBrush>
+    </Window.Resources>
+    <Grid>
+    <Border Margin="6" Padding="10" Background="{StaticResource PanelBrush}"
+            BorderBrush="#34FFFFFF" BorderThickness="1" CornerRadius="10">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.4"/>
+        </Border.Effect>
+        <Grid>
+        <Grid x:Name="NormalContent">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Visible"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsSwitching}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid Margin="4,1,4,9">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Codex 계정" FontSize="15" FontWeight="SemiBold"/>
+                    <TextBlock Text="계정을 누르면 Codex가 새 계정으로 재시작됩니다" FontSize="10.5"
+                               Foreground="{StaticResource MutedBrush}" Margin="0,2,0,0"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="↻" Width="30" Height="30" Style="{StaticResource FlatButton}"
+                        ToolTip="사용량 새로고침" Click="OnRefreshClicked"/>
+            </Grid>
+
+            <Border Grid.Row="1" Height="1" Background="#24FFFFFF"/>
+
+            <ScrollViewer Grid.Row="2" MaxHeight="380" VerticalScrollBarVisibility="Auto" Margin="0,8,0,6">
+                <Grid>
+                <TextBlock Text="등록된 계정이 없습니다" Foreground="{StaticResource MutedBrush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,12"
+                           FontSize="10.5">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Profiles.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <ItemsControl ItemsSource="{Binding Profiles}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Margin="0,0,0,6" Padding="0" HorizontalContentAlignment="Stretch"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    OverridesDefaultStyle="True"
+                                    Click="OnAccountClicked"
+                                    PreviewMouseRightButtonUp="OnAccountRightClicked">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <ContentPresenter HorizontalAlignment="Stretch"/>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <Border Background="#01000000" CornerRadius="8">
+                                    <Border.Triggers>
+                                        <EventTrigger RoutedEvent="MouseEnter">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="AccountHoverSurface"
+                                                                     Storyboard.TargetProperty="Opacity"
+                                                                     To="1" Duration="0:0:0.12">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <CubicEase EasingMode="EaseOut"/>
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                        <EventTrigger RoutedEvent="MouseLeave">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="AccountHoverSurface"
+                                                                     Storyboard.TargetProperty="Opacity"
+                                                                     To="0" Duration="0:0:0.16">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <CubicEase EasingMode="EaseOut"/>
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Border.Triggers>
+                                    <Grid>
+                                        <Border x:Name="AccountHoverSurface" CornerRadius="8"
+                                                Background="{StaticResource AccountHoverBrush}" Opacity="0"
+                                                IsHitTestVisible="False"/>
+                                        <Grid Margin="10,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="5"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource AccentBrush}" CornerRadius="3">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Opacity" Value="0"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                            <Setter Property="Opacity" Value="1"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                        </Border>
+                                        <StackPanel Grid.Column="2">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Email}" FontSize="12" FontWeight="SemiBold"
+                                                           MaxWidth="205" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="  현재" FontSize="9.5" Foreground="{StaticResource AccentBrush}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Status}" FontSize="9.5" Foreground="{StaticResource MutedBrush}"
+                                                       Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding PrimaryText}" FontSize="11" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="{Binding SecondaryText}" FontSize="10"
+                                                       Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Right" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                </Grid>
+            </ScrollViewer>
+
+            <Button Grid.Row="3" Content="＋ 계정 추가" Style="{StaticResource FlatButton}"
+                    HorizontalContentAlignment="Center" Click="OnAddClicked"/>
+
+            <TextBlock Grid.Row="4" Text="{Binding Message}" FontSize="9.5" Foreground="{StaticResource MutedBrush}"
+                       TextAlignment="Center" Margin="4,8,4,1" TextWrapping="Wrap"/>
+        </Grid>
+
+        <Grid x:Name="SwitchingContent" MinHeight="178" Margin="10">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsSwitching}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="286">
+                <Grid Width="44" Height="44" HorizontalAlignment="Center">
+                    <Ellipse Stroke="#22FFFFFF" StrokeThickness="3"/>
+                    <Ellipse Stroke="{StaticResource AccentBrush}" StrokeThickness="3"
+                             StrokeDashArray="1,2.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <RotateTransform/>
+                        </Ellipse.RenderTransform>
+                        <Ellipse.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                         From="0" To="360" Duration="0:0:0.9"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Ellipse.Triggers>
+                    </Ellipse>
+                </Grid>
+                <TextBlock Text="계정을 변경하고 있습니다" FontSize="14" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" Margin="0,14,0,0"/>
+                <TextBlock Text="{Binding SwitchingProfile.Email, TargetNullValue=선택한 계정}"
+                           FontSize="11" Foreground="{StaticResource AccentBrush}"
+                           HorizontalAlignment="Center" Margin="0,5,0,0"
+                           TextTrimming="CharacterEllipsis" MaxWidth="280"/>
+                <Border Height="1" Background="#24FFFFFF" Margin="22,14,22,11"/>
+                <TextBlock Text="{Binding Message}" FontSize="10.5"
+                           Foreground="{StaticResource MutedBrush}"
+                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                <TextBlock Text="완료될 때까지 위젯을 종료하지 마세요"
+                           FontSize="9.5" Foreground="#72FFFFFF"
+                           HorizontalAlignment="Center" Margin="0,6,0,0"/>
+            </StackPanel>
+        </Grid>
+        </Grid>
+    </Border>
+
+        <Popup x:Name="AccountMenuPopup"
+               Placement="MousePoint"
+               AllowsTransparency="True" StaysOpen="False"
+               PopupAnimation="Fade">
+            <Border Width="174" Margin="6" Padding="7"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="#3AFFFFFF" BorderThickness="1" CornerRadius="10">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.45"/>
+                </Border.Effect>
+                <Button Content="이 계정 제거" Height="34"
+                        Foreground="#FFFFB4AB" Style="{StaticResource FlatButton}"
+                        Click="OnRemoveClicked"/>
+            </Border>
+        </Popup>
+    </Grid>
+</Window>

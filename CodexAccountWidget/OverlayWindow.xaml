@@ -1,0 +1,85 @@
+<Window x:Class="CodexAccountWidget.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Codex 계정 위젯"
+        Width="218" Height="44"
+        WindowStyle="None" ResizeMode="NoResize"
+        ShowInTaskbar="False" Topmost="True"
+        AllowsTransparency="True" Background="Transparent">
+    <Grid>
+        <Grid.Resources>
+            <LinearGradientBrush x:Key="WidgetHoverBrush" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#30FFFFFF" Offset="0"/>
+                <GradientStop Color="#20FFFFFF" Offset="0.48"/>
+                <GradientStop Color="#16FFFFFF" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Resources>
+
+        <Border x:Name="RootBorder" Background="#01000000"
+                BorderThickness="0" CornerRadius="9"
+                Cursor="Hand" MouseLeftButtonUp="OnOverlayClicked"
+                MouseRightButtonUp="OnOverlayRightClicked">
+            <Border.Triggers>
+                <EventTrigger RoutedEvent="MouseEnter">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="HoverSurface"
+                                             Storyboard.TargetProperty="Opacity"
+                                             To="1" Duration="0:0:0.12">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+                <EventTrigger RoutedEvent="MouseLeave">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="HoverSurface"
+                                             Storyboard.TargetProperty="Opacity"
+                                             To="0" Duration="0:0:0.16">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </Border.Triggers>
+
+            <Grid>
+                <Border x:Name="HoverSurface" Background="{StaticResource WidgetHoverBrush}"
+                        CornerRadius="9" Opacity="0" IsHitTestVisible="False"/>
+
+            <Grid Margin="11,0,10,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="9"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Width="24" Height="24" CornerRadius="6" Background="Transparent" VerticalAlignment="Center">
+                    <TextBlock Text="C" FontWeight="SemiBold" Foreground="#FFD8E4FF"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+
+                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding ActiveProfile.Email, TargetNullValue=Codex 계정}" FontSize="11.5"
+                               FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding ActiveProfile.PlanLabel}" FontSize="9.5" Foreground="{StaticResource MutedBrush}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding ActiveProfile.PrimaryText, TargetNullValue=사용량 --}" FontSize="10.5"
+                               HorizontalAlignment="Right" Foreground="#FFE4ECFF"/>
+                    <TextBlock Text="{Binding ActiveProfile.SecondaryText}" FontSize="9.5"
+                               HorizontalAlignment="Right" Foreground="{StaticResource MutedBrush}"/>
+                </StackPanel>
+            </Grid>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

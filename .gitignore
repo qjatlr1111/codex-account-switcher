@@ -1,0 +1,17 @@
+.dotnet/
+.protocol/
+**/bin/
+**/obj/
+artifacts/
+dist/
+*.user
+*.suo
+
+# Codex 인증정보와 로컬 사용자 데이터는 절대 커밋하지 않습니다.
+**/auth.json
+**/auth.widget-backup.json
+**/profiles.json
+.codex-account-switcher/
+*.log
+*.sqlite
+*.sqlite-*
