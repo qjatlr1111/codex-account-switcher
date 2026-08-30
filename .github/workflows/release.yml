@@ -29,7 +29,7 @@ jobs:
         id: version
         shell: powershell
         run: |
-          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '1.1.0' }
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '1.1.1' }
           "value=$version" >> $env:GITHUB_OUTPUT
 
       - name: 단일 EXE와 설치 파일 생성
@@ -56,11 +56,11 @@ jobs:
           $releaseNotes = @'
           ## 주요 변경
 
-          - Windows 11 스타일의 투명 작업 표시줄 오버레이와 호버 애니메이션
-          - 계정 변경 확인 다이얼로그 및 단계별 진행 화면
-          - Codex 실행 감지, 독립적인 위젯 프로세스, 안정적인 재시작 처리
-          - 패키지 파일 가상화를 피하는 프로필 저장소 마이그레이션
-          - 프로필 저장 폴더 ACL 강화 및 민감 파일 Git 차단
+          - 계정 전환 시 이전 Codex 프로세스가 완전히 종료될 때까지 안정적으로 대기
+          - Windows 패키지 앱 실행 요청을 한 번만 보내 중복 실행과 반복 재시작 방지
+          - 새 프로세스 생성 여부가 아니라 실제 Codex 표시 창이 열린 경우에만 재시작 완료로 판정
+          - 프로세스만 실행되고 창이 열리지 않으면 30초 안에 명확한 실패 안내 표시
+          - 계정 전환 중에도 위젯 프로세스와 진행 화면 유지
 
           ## 보안 및 호환성 안내
 

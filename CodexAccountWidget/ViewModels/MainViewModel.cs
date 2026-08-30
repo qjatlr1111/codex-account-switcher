@@ -134,7 +134,7 @@ public sealed class MainViewModel(
 
         var gateAcquired = false;
         CodexLaunchTarget? launchTarget = null;
-        var relaunched = false;
+        var launchAttempted = false;
 
         try
         {
@@ -154,18 +154,19 @@ public sealed class MainViewModel(
             await PersistAsync();
 
             Message = "새 계정으로 Codex를 다시 실행합니다";
+            launchAttempted = true;
             await restarter.StartAsync(launchTarget);
-            relaunched = true;
             Message = "계정 전환 및 Codex 재시작 완료";
         }
         catch (Exception exception)
         {
             Message = $"전환 실패: {exception.Message}";
 
-            if (launchTarget is not null && !relaunched)
+            if (launchTarget is not null && !launchAttempted)
             {
                 try
                 {
+                    launchAttempted = true;
                     await restarter.StartAsync(launchTarget);
                     Message += " · Codex는 다시 실행했습니다";
                 }
