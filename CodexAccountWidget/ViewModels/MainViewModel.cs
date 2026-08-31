@@ -117,8 +117,7 @@ public sealed class MainViewModel(
             }
 
             await accounts.RefreshAsync(profile);
-            IsBusy = false;
-            await SwitchAsync(profile);
+            Message = "계정을 등록했습니다. 전환하려면 목록에서 계정을 선택하세요";
         }
         catch (Exception exception)
         {
