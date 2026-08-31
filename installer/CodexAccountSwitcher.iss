@@ -5,7 +5,7 @@
   #error OutputDir must be provided.
 #endif
 #ifndef ApplicationVersion
-  #define ApplicationVersion "1.1.5"
+  #define ApplicationVersion "1.1.6"
 #endif
 
 [Setup]
@@ -51,7 +51,7 @@ Name: "{autodesktop}\Codex 계정 전환 위젯"; Filename: "{app}\CodexAccountS
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "CodexAccountSwitcher"; ValueData: "&quot;{app}\CodexAccountSwitcher.exe&quot;"; Flags: uninsdeletevalue
 
 [Run]
-Filename: "{app}\CodexAccountSwitcher.exe"; Description: "Codex 계정 전환 위젯 실행"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\CodexAccountSwitcher.exe"; Description: "Codex 계정 전환 위젯 실행"; Flags: nowait postinstall
 
 [UninstallRun]
 Filename: "{cmd}"; Parameters: "/c taskkill /IM CodexAccountSwitcher.exe /F"; Flags: runhidden; RunOnceId: "StopWidget"

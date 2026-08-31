@@ -39,6 +39,7 @@ public partial class App : System.Windows.Application
             var config = new CodexConfigService();
             var restarter = new CodexDesktopRestartService();
             var updates = new UpdateCheckService();
+            var updateInstaller = new UpdateInstallerService();
             var viewModel = new MainViewModel(store, accounts, config, restarter);
 
             await viewModel.InitializeAsync(refreshUsage: false);
@@ -46,7 +47,8 @@ public partial class App : System.Windows.Application
                 viewModel,
                 restarter,
                 new StartupRegistrationService(),
-                updates);
+                updates,
+                updateInstaller);
             await _overlay.InitializeAsync();
         }
         catch (Exception exception)

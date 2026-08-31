@@ -30,6 +30,9 @@ public sealed class UpdateCheckService
             !releasePageUri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("안전한 GitHub 릴리스 주소를 받지 못했습니다.");
 
+        var assets = root.GetProperty("assets").EnumerateArray().ToArray();
+        var installerUri = GetReleaseAssetUri(assets, "CodexAccountSwitcher-Setup.exe");
+        var checksumUri = GetReleaseAssetUri(assets, "SHA256SUMS.txt");
         var currentVersion = Assembly.GetExecutingAssembly().GetName().Version
                              ?? new Version(0, 0, 0);
         return new UpdateCheckResult(
@@ -37,7 +40,26 @@ public sealed class UpdateCheckService
             latestVersion,
             tagName,
             releasePageUri,
+            installerUri,
+            checksumUri,
             latestVersion.CompareTo(currentVersion) > 0);
+    }
+
+    private static Uri GetReleaseAssetUri(JsonElement[] assets, string fileName)
+    {
+        var asset = assets.SingleOrDefault(candidate =>
+            candidate.GetProperty("name").GetString() == fileName);
+        var url = asset.ValueKind == JsonValueKind.Undefined
+            ? null
+            : asset.GetProperty("browser_download_url").GetString();
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            uri.Scheme != Uri.UriSchemeHttps ||
+            !uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) ||
+            !uri.AbsolutePath.StartsWith(
+                "/qjatlr1111/codex-account-switcher/releases/download/",
+                StringComparison.Ordinal))
+            throw new InvalidOperationException($"안전한 {fileName} 주소를 받지 못했습니다.");
+        return uri;
     }
 
     private static HttpClient CreateClient()
@@ -56,4 +78,6 @@ public sealed record UpdateCheckResult(
     Version LatestVersion,
     string LatestTagName,
     Uri ReleasePageUri,
+    Uri InstallerUri,
+    Uri ChecksumUri,
     bool IsUpdateAvailable);

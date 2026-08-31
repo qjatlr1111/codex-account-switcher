@@ -29,7 +29,7 @@ jobs:
         id: version
         shell: powershell
         run: |
-          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '1.1.5' }
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '1.1.6' }
           "value=$version" >> $env:GITHUB_OUTPUT
 
       - name: 단일 EXE와 설치 파일 생성
@@ -56,11 +56,11 @@ jobs:
           $releaseNotes = @'
           ## 주요 변경
 
-          - 브라우저 로그인 중 `로그인 취소` 버튼 제공
-          - 취소 시 Codex App Server에 `account/login/cancel`을 보내 즉시 대기 종료
-          - Explorer에서 실행한 위젯도 설치된 Codex CLI를 안정적으로 탐색
-          - 계정 추가와 사용량 새로고침이 겹칠 때 발생하던 무응답 개선
-          - 기본 브라우저 실행 회귀 수정
+          - GitHub Release에서 새 버전을 자동 감지
+          - 사용자 확인 후 설치 파일을 자동 다운로드하고 silent 설치
+          - `SHA256SUMS.txt`와 설치 파일 SHA-256을 비교해 무결성 검증
+          - 설치 완료 후 Codex Account Switcher 자동 재실행
+          - 트레이 메뉴에서 수동 업데이트 확인 및 설치 지원
 
           ## 보안 및 호환성 안내
 

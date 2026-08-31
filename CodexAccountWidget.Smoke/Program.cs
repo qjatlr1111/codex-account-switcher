@@ -14,15 +14,29 @@ if (args.Length == 1 && args[0] == "--check-updates")
     var result = await new UpdateCheckService().CheckAsync();
     if (result.ReleasePageUri.Host != "github.com")
         throw new InvalidOperationException("GitHub 릴리스 주소가 아닙니다.");
+    if (result.InstallerUri.Host != "github.com" || result.ChecksumUri.Host != "github.com")
+        throw new InvalidOperationException("업데이트 파일 주소가 안전하지 않습니다.");
     Console.WriteLine(
         $"PASS: 업데이트 확인 (현재 {result.CurrentVersion}, 최신 {result.LatestTagName})");
+    return 0;
+}
+
+if (args.Length == 1 && args[0] == "--download-update")
+{
+    var result = await new UpdateCheckService().CheckAsync();
+    var installerPath = await new UpdateInstallerService().DownloadVerifiedAsync(result);
+    if (new FileInfo(installerPath).Length == 0)
+        throw new InvalidOperationException("다운로드한 설치 파일이 비어 있습니다.");
+    Console.WriteLine(
+        $"PASS: {result.LatestTagName} 설치 파일 다운로드 및 SHA-256 검증");
     return 0;
 }
 
 if (args.Length != 1)
 {
     Console.Error.WriteLine(
-        "사용법: CodexAccountWidget.Smoke <임시 CODEX_HOME> | --detect-codex | --check-updates");
+        "사용법: CodexAccountWidget.Smoke <임시 CODEX_HOME> | --detect-codex | " +
+        "--check-updates | --download-update");
     return 2;
 }
 

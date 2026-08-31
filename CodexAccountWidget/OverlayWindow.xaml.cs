@@ -32,6 +32,7 @@ public partial class OverlayWindow : Window
     private readonly CodexDesktopRestartService _codexDesktop;
     private readonly StartupRegistrationService _startupRegistration;
     private readonly UpdateCheckService _updateCheckService;
+    private readonly UpdateInstallerService _updateInstallerService;
     private readonly bool _diagnosticMode;
     private readonly DispatcherTimer _visibilityTimer;
     private readonly DispatcherTimer _refreshTimer;
@@ -49,6 +50,7 @@ public partial class OverlayWindow : Window
     private readonly Forms.ToolStripMenuItem _autoContrastMenuItem;
     private readonly Forms.ToolStripMenuItem _updateMenuItem;
     private UpdateCheckResult? _availableUpdate;
+    private bool _isInstallingUpdate;
     private bool _isUserHidden;
     private bool _isManuallyShown;
     private bool _codexWindowPresent;
@@ -61,13 +63,15 @@ public partial class OverlayWindow : Window
         MainViewModel viewModel,
         CodexDesktopRestartService codexDesktop,
         StartupRegistrationService startupRegistration,
-        UpdateCheckService updateCheckService)
+        UpdateCheckService updateCheckService,
+        UpdateInstallerService updateInstallerService)
     {
         InitializeComponent();
         DataContext = _viewModel = viewModel;
         _codexDesktop = codexDesktop;
         _startupRegistration = startupRegistration;
         _updateCheckService = updateCheckService;
+        _updateInstallerService = updateInstallerService;
         _diagnosticMode = Environment.GetCommandLineArgs()
             .Any(argument => argument.Equals("--diagnostic", StringComparison.OrdinalIgnoreCase));
         if (_diagnosticMode) ShowInTaskbar = true;
@@ -213,7 +217,8 @@ public partial class OverlayWindow : Window
             Visible = true
         };
         trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ShowWidget);
-        trayIcon.BalloonTipClicked += (_, _) => Dispatcher.Invoke(OpenAvailableUpdate);
+        trayIcon.BalloonTipClicked += (_, _) =>
+            Dispatcher.InvokeAsync(InstallAvailableUpdateAsync);
         return (trayIcon, autoVisibility, startup, autoContrast, update);
     }
 
@@ -221,7 +226,7 @@ public partial class OverlayWindow : Window
     {
         if (_availableUpdate is not null)
         {
-            OpenAvailableUpdate();
+            await InstallAvailableUpdateAsync();
             return;
         }
 
@@ -244,7 +249,7 @@ public partial class OverlayWindow : Window
             }
 
             _availableUpdate = result;
-            _updateMenuItem.Text = $"{result.LatestTagName} 업데이트 열기";
+            _updateMenuItem.Text = $"{result.LatestTagName} 업데이트 설치";
             _trayIcon.ShowBalloonTip(7000, "새 업데이트가 있습니다",
                 $"Codex Account Switcher {result.LatestTagName}을 사용할 수 있습니다.",
                 Forms.ToolTipIcon.Info);
@@ -262,20 +267,33 @@ public partial class OverlayWindow : Window
         }
     }
 
-    private void OpenAvailableUpdate()
+    private async Task InstallAvailableUpdateAsync()
     {
-        if (_availableUpdate is null) return;
+        if (_availableUpdate is null || _isInstallingUpdate) return;
+        var answer = System.Windows.MessageBox.Show(
+            $"{_availableUpdate.LatestTagName}을 다운로드하고 설치할까요?\n" +
+            "설치 파일의 SHA-256을 확인한 후 앱이 자동으로 다시 시작됩니다.",
+            "Codex Account Switcher 업데이트",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (answer != MessageBoxResult.Yes) return;
+
+        _isInstallingUpdate = true;
+        _updateMenuItem.Enabled = false;
+        _updateMenuItem.Text = "업데이트 다운로드 중...";
         try
         {
-            _ = Process.Start(new ProcessStartInfo(_availableUpdate.ReleasePageUri.AbsoluteUri)
-            {
-                UseShellExecute = true
-            });
+            var installerPath = await _updateInstallerService.DownloadVerifiedAsync(_availableUpdate);
+            _updateInstallerService.Launch(installerPath);
         }
-        catch
+        catch (Exception exception)
         {
-            _trayIcon.ShowBalloonTip(4000, "업데이트 페이지 열기 실패",
-                "기본 브라우저를 열지 못했습니다.", Forms.ToolTipIcon.Warning);
+            _isInstallingUpdate = false;
+            _updateMenuItem.Enabled = true;
+            _updateMenuItem.Text = $"{_availableUpdate.LatestTagName} 업데이트 설치";
+            System.Windows.MessageBox.Show(
+                $"업데이트를 설치하지 못했습니다.\n{exception.Message}",
+                "업데이트 실패", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
