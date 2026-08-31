@@ -9,9 +9,20 @@ if (args.Length == 1 && args[0] == "--detect-codex")
     return 0;
 }
 
+if (args.Length == 1 && args[0] == "--check-updates")
+{
+    var result = await new UpdateCheckService().CheckAsync();
+    if (result.ReleasePageUri.Host != "github.com")
+        throw new InvalidOperationException("GitHub 릴리스 주소가 아닙니다.");
+    Console.WriteLine(
+        $"PASS: 업데이트 확인 (현재 {result.CurrentVersion}, 최신 {result.LatestTagName})");
+    return 0;
+}
+
 if (args.Length != 1)
 {
-    Console.Error.WriteLine("사용법: CodexAccountWidget.Smoke <임시 CODEX_HOME> | --detect-codex");
+    Console.Error.WriteLine(
+        "사용법: CodexAccountWidget.Smoke <임시 CODEX_HOME> | --detect-codex | --check-updates");
     return 2;
 }
 

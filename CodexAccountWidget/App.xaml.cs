@@ -38,10 +38,15 @@ public partial class App : System.Windows.Application
             var accounts = new CodexAccountService();
             var config = new CodexConfigService();
             var restarter = new CodexDesktopRestartService();
+            var updates = new UpdateCheckService();
             var viewModel = new MainViewModel(store, accounts, config, restarter);
 
             await viewModel.InitializeAsync(refreshUsage: false);
-            _overlay = new OverlayWindow(viewModel, restarter, new StartupRegistrationService());
+            _overlay = new OverlayWindow(
+                viewModel,
+                restarter,
+                new StartupRegistrationService(),
+                updates);
             await _overlay.InitializeAsync();
         }
         catch (Exception exception)

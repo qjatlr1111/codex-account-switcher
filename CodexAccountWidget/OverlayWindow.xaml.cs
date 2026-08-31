@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 using System.IO;
@@ -30,11 +31,14 @@ public partial class OverlayWindow : Window
     private readonly MainViewModel _viewModel;
     private readonly CodexDesktopRestartService _codexDesktop;
     private readonly StartupRegistrationService _startupRegistration;
+    private readonly UpdateCheckService _updateCheckService;
     private readonly bool _diagnosticMode;
     private readonly DispatcherTimer _visibilityTimer;
     private readonly DispatcherTimer _refreshTimer;
     private readonly DispatcherTimer _liveUsageTimer;
+    private readonly DispatcherTimer _updateCheckTimer;
     private readonly SemaphoreSlim _liveUsageGate = new(1, 1);
+    private readonly SemaphoreSlim _updateCheckGate = new(1, 1);
     private CodexAppServerClient? _liveUsageClient;
     private string? _liveUsageProfileId;
     private AccountPanelWindow? _panel;
@@ -43,6 +47,8 @@ public partial class OverlayWindow : Window
     private readonly Forms.ToolStripMenuItem _autoVisibilityMenuItem;
     private readonly Forms.ToolStripMenuItem _startupMenuItem;
     private readonly Forms.ToolStripMenuItem _autoContrastMenuItem;
+    private readonly Forms.ToolStripMenuItem _updateMenuItem;
+    private UpdateCheckResult? _availableUpdate;
     private bool _isUserHidden;
     private bool _isManuallyShown;
     private bool _codexWindowPresent;
@@ -54,12 +60,14 @@ public partial class OverlayWindow : Window
     public OverlayWindow(
         MainViewModel viewModel,
         CodexDesktopRestartService codexDesktop,
-        StartupRegistrationService startupRegistration)
+        StartupRegistrationService startupRegistration,
+        UpdateCheckService updateCheckService)
     {
         InitializeComponent();
         DataContext = _viewModel = viewModel;
         _codexDesktop = codexDesktop;
         _startupRegistration = startupRegistration;
+        _updateCheckService = updateCheckService;
         _diagnosticMode = Environment.GetCommandLineArgs()
             .Any(argument => argument.Equals("--diagnostic", StringComparison.OrdinalIgnoreCase));
         if (_diagnosticMode) ShowInTaskbar = true;
@@ -79,12 +87,16 @@ public partial class OverlayWindow : Window
 
         _liveUsageTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
         _liveUsageTimer.Tick += async (_, _) => await SyncActiveUsageAsync();
+        _updateCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(6) };
+        _updateCheckTimer.Tick += async (_, _) => await CheckForUpdatesAsync(manual: false);
 
-        (_trayIcon, _autoVisibilityMenuItem, _startupMenuItem, _autoContrastMenuItem) = CreateTrayIcon();
+        (_trayIcon, _autoVisibilityMenuItem, _startupMenuItem, _autoContrastMenuItem,
+            _updateMenuItem) = CreateTrayIcon();
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         Closed += (_, _) =>
         {
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _updateCheckTimer.Stop();
             _trayIcon.Dispose();
             if (_foregroundEventHook != IntPtr.Zero)
             {
@@ -105,6 +117,8 @@ public partial class OverlayWindow : Window
         _visibilityTimer.Start();
         _refreshTimer.Start();
         _liveUsageTimer.Start();
+        _updateCheckTimer.Start();
+        _ = CheckForUpdatesAsync(manual: false);
 
         if (_diagnosticMode)
         {
@@ -156,7 +170,8 @@ public partial class OverlayWindow : Window
     }
 
     private (Forms.NotifyIcon TrayIcon, Forms.ToolStripMenuItem AutoVisibility,
-        Forms.ToolStripMenuItem Startup, Forms.ToolStripMenuItem AutoContrast) CreateTrayIcon()
+        Forms.ToolStripMenuItem Startup, Forms.ToolStripMenuItem AutoContrast,
+        Forms.ToolStripMenuItem Update) CreateTrayIcon()
     {
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("위젯 표시", null, (_, _) => Dispatcher.Invoke(ShowWidget));
@@ -183,6 +198,9 @@ public partial class OverlayWindow : Window
         startup.Click += (_, _) => Dispatcher.InvokeAsync(ToggleStartupAsync);
         menu.Items.Add(startup);
         menu.Items.Add(new Forms.ToolStripSeparator());
+        var update = new Forms.ToolStripMenuItem("업데이트 확인");
+        update.Click += (_, _) => Dispatcher.InvokeAsync(OnUpdateMenuClickedAsync);
+        menu.Items.Add(update);
         menu.Items.Add("정보", null, (_, _) => Dispatcher.Invoke(ShowAboutWindow));
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("끝내기", null, (_, _) => Dispatcher.Invoke(ExitApplication));
@@ -195,7 +213,70 @@ public partial class OverlayWindow : Window
             Visible = true
         };
         trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ShowWidget);
-        return (trayIcon, autoVisibility, startup, autoContrast);
+        trayIcon.BalloonTipClicked += (_, _) => Dispatcher.Invoke(OpenAvailableUpdate);
+        return (trayIcon, autoVisibility, startup, autoContrast, update);
+    }
+
+    private async Task OnUpdateMenuClickedAsync()
+    {
+        if (_availableUpdate is not null)
+        {
+            OpenAvailableUpdate();
+            return;
+        }
+
+        await CheckForUpdatesAsync(manual: true);
+    }
+
+    private async Task CheckForUpdatesAsync(bool manual)
+    {
+        if (!await _updateCheckGate.WaitAsync(0)) return;
+
+        try
+        {
+            var result = await _updateCheckService.CheckAsync();
+            if (!result.IsUpdateAvailable)
+            {
+                if (manual)
+                    _trayIcon.ShowBalloonTip(4000, "업데이트 확인",
+                        "현재 최신 버전을 사용하고 있습니다.", Forms.ToolTipIcon.Info);
+                return;
+            }
+
+            _availableUpdate = result;
+            _updateMenuItem.Text = $"{result.LatestTagName} 업데이트 열기";
+            _trayIcon.ShowBalloonTip(7000, "새 업데이트가 있습니다",
+                $"Codex Account Switcher {result.LatestTagName}을 사용할 수 있습니다.",
+                Forms.ToolTipIcon.Info);
+        }
+        catch
+        {
+            if (manual)
+                _trayIcon.ShowBalloonTip(4000, "업데이트 확인 실패",
+                    "GitHub에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+                    Forms.ToolTipIcon.Warning);
+        }
+        finally
+        {
+            _updateCheckGate.Release();
+        }
+    }
+
+    private void OpenAvailableUpdate()
+    {
+        if (_availableUpdate is null) return;
+        try
+        {
+            _ = Process.Start(new ProcessStartInfo(_availableUpdate.ReleasePageUri.AbsoluteUri)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            _trayIcon.ShowBalloonTip(4000, "업데이트 페이지 열기 실패",
+                "기본 브라우저를 열지 못했습니다.", Forms.ToolTipIcon.Warning);
+        }
     }
 
     private void ShowAboutWindow()
@@ -473,6 +554,7 @@ public partial class OverlayWindow : Window
         _visibilityTimer.Stop();
         _refreshTimer.Stop();
         _liveUsageTimer.Stop();
+        _updateCheckTimer.Stop();
         _trayIcon.Visible = false;
         await _liveUsageGate.WaitAsync();
         try { await DisposeLiveUsageClientAsync(); }
