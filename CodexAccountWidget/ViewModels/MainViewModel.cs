@@ -18,6 +18,7 @@ public sealed class MainViewModel(
     private string _message = "계정을 추가해 주세요";
     private bool _isBusy;
     private bool _isSwitching;
+    private bool _hasSwitchError;
     private bool _showOnlyWhileCodexIsRunning = true;
     private bool _startWithWindows = true;
     private readonly SemaphoreSlim _accountOperationGate = new(1, 1);
@@ -29,6 +30,7 @@ public sealed class MainViewModel(
     public string Message { get => _message; private set => Set(ref _message, value); }
     public bool IsBusy { get => _isBusy; private set => Set(ref _isBusy, value); }
     public bool IsSwitching { get => _isSwitching; private set => Set(ref _isSwitching, value); }
+    public bool HasSwitchError { get => _hasSwitchError; private set => Set(ref _hasSwitchError, value); }
     public bool ShowOnlyWhileCodexIsRunning { get => _showOnlyWhileCodexIsRunning; private set => Set(ref _showOnlyWhileCodexIsRunning, value); }
     public bool StartWithWindows { get => _startWithWindows; private set => Set(ref _startWithWindows, value); }
 
@@ -82,6 +84,10 @@ public sealed class MainViewModel(
         {
             Message = "계정 전환을 준비하고 있습니다";
         }
+        catch (Exception exception)
+        {
+            Message = $"사용량 새로고침 실패: {ShortError(exception)}";
+        }
         finally
         {
             if (ReferenceEquals(_refreshCancellation, refreshCancellation))
@@ -95,11 +101,12 @@ public sealed class MainViewModel(
     {
         if (IsBusy) return;
         IsBusy = true;
-        var profile = store.CreatePendingProfile();
-        Profiles.Add(profile);
+        AccountProfile? profile = null;
 
         try
         {
+            profile = store.CreatePendingProfile();
+            Profiles.Add(profile);
             var success = await accounts.LoginAsync(profile);
             if (!success)
             {
@@ -113,10 +120,23 @@ public sealed class MainViewModel(
             IsBusy = false;
             await SwitchAsync(profile);
         }
+        catch (Exception exception)
+        {
+            if (profile is not null) Profiles.Remove(profile);
+            Message = $"계정 추가 실패: {ShortError(exception)}";
+        }
         finally
         {
             IsBusy = false;
-            await PersistAsync();
+            try
+            {
+                await PersistAsync();
+            }
+            catch (Exception exception)
+            {
+                HasSwitchError = true;
+                Message = $"계정 목록 저장 실패: {ShortError(exception)}";
+            }
         }
     }
 
@@ -130,6 +150,7 @@ public sealed class MainViewModel(
             : "진행 중인 사용량 확인을 중지하고 있습니다";
         SwitchingProfile = profile;
         IsSwitching = true;
+        HasSwitchError = false;
         _refreshCancellation?.Cancel();
 
         var gateAcquired = false;
@@ -160,6 +181,7 @@ public sealed class MainViewModel(
         }
         catch (Exception exception)
         {
+            HasSwitchError = true;
             Message = $"전환 실패: {exception.Message}";
 
             if (launchTarget is not null && !launchAttempted)
@@ -210,6 +232,9 @@ public sealed class MainViewModel(
         _settings.ActiveProfileId = ActiveProfile?.Id;
         return store.SaveAsync(_settings);
     }
+
+    private static string ShortError(Exception exception) =>
+        exception.Message.Length > 80 ? exception.Message[..80] + "…" : exception.Message;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

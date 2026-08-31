@@ -18,6 +18,8 @@ public partial class OverlayWindow : Window
     private const int GwlHwndParent = -8;
     private const long WsExToolWindow = 0x00000080L;
     private const long WsExNoActivate = 0x08000000L;
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoMove = 0x0002;
     private const uint SwpNoActivate = 0x0010;
     private const uint SwpShowWindow = 0x0040;
     private static readonly IntPtr HwndTopmost = new(-1);
@@ -175,7 +177,8 @@ public partial class OverlayWindow : Window
 
         var inRestartGrace = _viewModel.IsSwitching || DateTime.UtcNow < _restartGraceUntil;
         var shouldShow = _viewModel.ShowOnlyWhileCodexIsRunning
-            ? _isManuallyShown || inRestartGrace || (_codexWindowPresent && !_isUserHidden)
+            ? _viewModel.HasSwitchError || _isManuallyShown || inRestartGrace ||
+              (_codexWindowPresent && !_isUserHidden)
             : !_isUserHidden;
 
         if (!shouldShow)
@@ -215,8 +218,13 @@ public partial class OverlayWindow : Window
 
         var handle = new WindowInteropHelper(this).Handle;
         AttachToTaskbar(handle, taskbarHandle);
-        SetWindowPos(handle, HwndTopmost, (int)Left, (int)Top, (int)Width, (int)Height,
-            SwpNoActivate | SwpShowWindow);
+        // Left, Top, Width, and Height are WPF device-independent units. Passing
+        // them back to SetWindowPos as physical pixels makes the window shrink
+        // on every timer tick when display scaling is enabled. WPF already
+        // applies the correct DPI transform, so SetWindowPos only controls the
+        // z-order here.
+        SetWindowPos(handle, HwndTopmost, 0, 0, 0, 0,
+            SwpNoSize | SwpNoMove | SwpNoActivate | SwpShowWindow);
 
         _panel?.Reposition(this);
     }
@@ -295,6 +303,16 @@ public partial class OverlayWindow : Window
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(MainViewModel.HasSwitchError))
+        {
+            if (_viewModel.HasSwitchError)
+            {
+                _isUserHidden = false;
+                ShowWidgetCore();
+            }
+            return;
+        }
+
         if (e.PropertyName != nameof(MainViewModel.IsSwitching)) return;
 
         if (_viewModel.IsSwitching)

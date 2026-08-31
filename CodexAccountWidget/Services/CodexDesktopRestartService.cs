@@ -10,6 +10,8 @@ public sealed class CodexDesktopRestartService
     private const string DefaultApplicationUserModelId = "OpenAI.Codex_2p2nqsd0c76g0!App";
     private const uint ProcessQueryLimitedInformation = 0x1000;
     private const uint WmClose = 0x0010;
+    private const int LaunchAttemptCount = 2;
+    private static readonly TimeSpan LaunchAttemptTimeout = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan StopStabilityDuration = TimeSpan.FromMilliseconds(900);
 
     public async Task<CodexLaunchTarget> StopAsync(CancellationToken cancellationToken = default)
@@ -66,24 +68,31 @@ public sealed class CodexDesktopRestartService
     public async Task StartAsync(CodexLaunchTarget target, CancellationToken cancellationToken = default)
     {
         await Task.Delay(350, cancellationToken);
-        ActivatePackagedApplication(target.ApplicationUserModelId);
-
-        var deadline = DateTime.UtcNow.AddSeconds(30);
         var sawProcess = false;
-        while (DateTime.UtcNow < deadline)
+
+        for (var attempt = 1; attempt <= LaunchAttemptCount; attempt++)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (HasRunningWindow()) return;
+            ActivatePackagedApplication(target.ApplicationUserModelId);
+            var deadline = DateTime.UtcNow + LaunchAttemptTimeout;
 
-            if (FindProcessIdsAndDispose().Length > 0)
-                sawProcess = true;
+            while (DateTime.UtcNow < deadline)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (HasRunningWindow()) return;
 
-            await Task.Delay(250, cancellationToken);
+                if (FindProcessIdsAndDispose().Length > 0)
+                    sawProcess = true;
+
+                await Task.Delay(250, cancellationToken);
+            }
+
+            if (attempt < LaunchAttemptCount)
+                await Task.Delay(750, cancellationToken);
         }
 
         throw new InvalidOperationException(sawProcess
-            ? "Codex 프로세스는 시작됐지만 30초 안에 표시 창이 열리지 않았습니다. 앱을 직접 열어 주세요."
-            : "Codex 실행을 요청했지만 30초 안에 앱 프로세스가 확인되지 않았습니다. 앱을 직접 열어 주세요.");
+            ? "Codex 프로세스는 시작됐지만 두 번의 실행 시도 후에도 표시 창이 열리지 않았습니다."
+            : "Codex를 두 번 실행했지만 앱 프로세스가 확인되지 않았습니다.");
     }
 
     public IReadOnlyList<int> FindRunningProcessIds() =>
