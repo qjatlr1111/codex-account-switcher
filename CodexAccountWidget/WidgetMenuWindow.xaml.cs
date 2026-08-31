@@ -6,12 +6,20 @@ public partial class WidgetMenuWindow : Window
 {
     private readonly Action _hideWidget;
     private readonly Action _exitApplication;
+    private readonly Func<Task> _toggleAutoContrast;
+    private readonly Func<bool> _isAutoContrastEnabled;
 
-    public WidgetMenuWindow(Action hideWidget, Action exitApplication)
+    public WidgetMenuWindow(
+        Action hideWidget,
+        Action exitApplication,
+        Func<Task> toggleAutoContrast,
+        Func<bool> isAutoContrastEnabled)
     {
         InitializeComponent();
         _hideWidget = hideWidget;
         _exitApplication = exitApplication;
+        _toggleAutoContrast = toggleAutoContrast;
+        _isAutoContrastEnabled = isAutoContrastEnabled;
     }
 
     public void ShowMenu(OverlayWindow overlay)
@@ -23,6 +31,7 @@ public partial class WidgetMenuWindow : Window
         }
 
         Owner ??= overlay;
+        AutoContrastCheckBox.IsChecked = _isAutoContrastEnabled();
         Left = overlay.Left;
         Top = overlay.Top;
         Opacity = 0;
@@ -31,6 +40,12 @@ public partial class WidgetMenuWindow : Window
         Top = Math.Max(0, overlay.Top - ActualHeight - 3);
         Activate();
         EntranceAnimation.Play(this);
+    }
+
+    private async void OnAutoContrastClicked(object sender, RoutedEventArgs e)
+    {
+        await _toggleAutoContrast();
+        AutoContrastCheckBox.IsChecked = _isAutoContrastEnabled();
     }
 
     private void OnHideClicked(object sender, RoutedEventArgs e)

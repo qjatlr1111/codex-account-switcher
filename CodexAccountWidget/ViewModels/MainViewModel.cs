@@ -24,6 +24,7 @@ public sealed class MainViewModel(
     private bool _hasSwitchError;
     private bool _showOnlyWhileCodexIsRunning = true;
     private bool _startWithWindows = true;
+    private bool _autoAdjustWidgetTextColor = true;
     private readonly SemaphoreSlim _accountOperationGate = new(1, 1);
     private CancellationTokenSource? _refreshCancellation;
     private CancellationTokenSource? _loginCancellation;
@@ -41,12 +42,14 @@ public sealed class MainViewModel(
     public bool HasSwitchError { get => _hasSwitchError; private set => Set(ref _hasSwitchError, value); }
     public bool ShowOnlyWhileCodexIsRunning { get => _showOnlyWhileCodexIsRunning; private set => Set(ref _showOnlyWhileCodexIsRunning, value); }
     public bool StartWithWindows { get => _startWithWindows; private set => Set(ref _startWithWindows, value); }
+    public bool AutoAdjustWidgetTextColor { get => _autoAdjustWidgetTextColor; private set => Set(ref _autoAdjustWidgetTextColor, value); }
 
     public async Task InitializeAsync(bool refreshUsage = true)
     {
         _settings = await store.LoadAsync();
         ShowOnlyWhileCodexIsRunning = _settings.ShowOnlyWhileCodexIsRunning;
         StartWithWindows = _settings.StartWithWindows;
+        AutoAdjustWidgetTextColor = _settings.AutoAdjustWidgetTextColor;
         foreach (var profile in _settings.Profiles) Profiles.Add(profile);
 
         var providerConfiguration = await config.LoadAsync();
@@ -73,6 +76,13 @@ public sealed class MainViewModel(
     {
         StartWithWindows = value;
         _settings.StartWithWindows = value;
+        await PersistAsync();
+    }
+
+    public async Task SetAutoAdjustWidgetTextColorAsync(bool value)
+    {
+        AutoAdjustWidgetTextColor = value;
+        _settings.AutoAdjustWidgetTextColor = value;
         await PersistAsync();
     }
 

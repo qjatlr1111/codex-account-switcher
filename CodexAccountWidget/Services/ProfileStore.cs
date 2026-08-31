@@ -303,4 +303,5 @@ public sealed class ProfileSettings
     public List<AccountProfile> Profiles { get; set; } = [];
     public bool ShowOnlyWhileCodexIsRunning { get; set; } = true;
     public bool StartWithWindows { get; set; } = true;
+    public bool AutoAdjustWidgetTextColor { get; set; } = true;
 }

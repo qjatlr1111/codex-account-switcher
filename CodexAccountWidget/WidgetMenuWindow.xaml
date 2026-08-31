@@ -6,6 +6,10 @@
         WindowStyle="None" ResizeMode="NoResize"
         ShowInTaskbar="False" Topmost="True"
         AllowsTransparency="True" Background="Transparent"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextHintingMode="Fixed"
+        TextOptions.TextRenderingMode="Grayscale"
         Deactivated="OnDeactivated">
     <Border Margin="6" Padding="7"
             Background="{StaticResource PanelBrush}"
@@ -14,6 +18,11 @@
             <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.45"/>
         </Border.Effect>
         <StackPanel>
+            <CheckBox x:Name="AutoContrastCheckBox"
+                      Content="배경에 맞춰 글자색 자동 조절"
+                      Height="34" Padding="8,0" Margin="2,0,2,5"
+                      Foreground="White" Cursor="Hand"
+                      Click="OnAutoContrastClicked"/>
             <Button Content="위젯 숨기기" Height="34" Margin="0,0,0,5"
                     Style="{StaticResource FlatButton}" Click="OnHideClicked"/>
             <Button Content="프로그램 끝내기" Height="34"

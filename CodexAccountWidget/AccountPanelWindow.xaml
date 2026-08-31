@@ -6,6 +6,10 @@
         WindowStyle="None" ResizeMode="NoResize"
         ShowInTaskbar="False" Topmost="True"
         AllowsTransparency="True" Background="Transparent"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextHintingMode="Fixed"
+        TextOptions.TextRenderingMode="Grayscale"
         Deactivated="OnDeactivated">
     <Window.Resources>
         <LinearGradientBrush x:Key="AccountHoverBrush" StartPoint="0,0" EndPoint="0,1">

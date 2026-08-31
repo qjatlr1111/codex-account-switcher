@@ -6,7 +6,11 @@
         WindowStartupLocation="CenterOwner"
         WindowStyle="None" ResizeMode="NoResize"
         ShowInTaskbar="False" Topmost="True"
-        AllowsTransparency="True" Background="Transparent" Opacity="0">
+        AllowsTransparency="True" Background="Transparent" Opacity="0"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextHintingMode="Fixed"
+        TextOptions.TextRenderingMode="Grayscale">
     <Border Margin="8" Padding="18" CornerRadius="12"
             Background="#F41F1F1F">
         <Border.Effect>

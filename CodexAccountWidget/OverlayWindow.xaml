@@ -5,15 +5,25 @@
         Width="218" Height="44"
         WindowStyle="None" ResizeMode="NoResize"
         ShowInTaskbar="False" Topmost="True"
-        AllowsTransparency="True" Background="Transparent">
+        AllowsTransparency="True" Background="Transparent"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextHintingMode="Fixed"
+        TextOptions.TextRenderingMode="Grayscale">
+    <Window.Resources>
+        <SolidColorBrush x:Key="WidgetPrimaryTextBrush" Color="#FFF5F7FF"/>
+        <SolidColorBrush x:Key="WidgetSecondaryTextBrush" Color="#FFA7A7A7"/>
+        <SolidColorBrush x:Key="WidgetAccentTextBrush" Color="#FFD8E4FF"/>
+        <LinearGradientBrush x:Key="WidgetHoverBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#30FFFFFF" Offset="0"/>
+            <GradientStop Color="#20FFFFFF" Offset="0.48"/>
+            <GradientStop Color="#16FFFFFF" Offset="1"/>
+        </LinearGradientBrush>
+        <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="Foreground" Value="{DynamicResource WidgetPrimaryTextBrush}"/>
+        </Style>
+    </Window.Resources>
     <Grid>
-        <Grid.Resources>
-            <LinearGradientBrush x:Key="WidgetHoverBrush" StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#30FFFFFF" Offset="0"/>
-                <GradientStop Color="#20FFFFFF" Offset="0.48"/>
-                <GradientStop Color="#16FFFFFF" Offset="1"/>
-            </LinearGradientBrush>
-        </Grid.Resources>
 
         <Border x:Name="RootBorder" Background="#01000000"
                 BorderThickness="0" CornerRadius="9"
@@ -61,7 +71,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Border Width="24" Height="24" CornerRadius="6" Background="Transparent" VerticalAlignment="Center">
-                    <TextBlock Text="C" FontWeight="SemiBold" Foreground="#FFD8E4FF"
+                    <TextBlock Text="C" FontWeight="SemiBold" Foreground="{DynamicResource WidgetAccentTextBrush}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
 
@@ -78,7 +88,7 @@
                     </StackPanel.Style>
                     <TextBlock Text="{Binding ActiveProfile.Email, TargetNullValue=Codex 계정}" FontSize="11.5"
                                FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock Text="{Binding ActiveProfile.PlanLabel}" FontSize="9.5" Foreground="{StaticResource MutedBrush}"/>
+                    <TextBlock Text="{Binding ActiveProfile.PlanLabel}" FontSize="9.5" Foreground="{DynamicResource WidgetSecondaryTextBrush}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
@@ -94,7 +104,7 @@
                     </StackPanel.Style>
                     <TextBlock Text="{Binding ActiveProvider.DisplayName}" FontSize="11.5"
                                FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock Text="MODEL PROVIDER" FontSize="9.5" Foreground="{StaticResource MutedBrush}"/>
+                    <TextBlock Text="MODEL PROVIDER" FontSize="9.5" Foreground="{DynamicResource WidgetSecondaryTextBrush}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right">
@@ -109,9 +119,9 @@
                         </Style>
                     </StackPanel.Style>
                     <TextBlock Text="{Binding ActiveProfile.PrimaryText, TargetNullValue=사용량 --}" FontSize="10.5"
-                               HorizontalAlignment="Right" Foreground="#FFE4ECFF"/>
+                               HorizontalAlignment="Right" Foreground="{DynamicResource WidgetPrimaryTextBrush}"/>
                     <TextBlock Text="{Binding ActiveProfile.SecondaryText}" FontSize="9.5"
-                               HorizontalAlignment="Right" Foreground="{StaticResource MutedBrush}"/>
+                               HorizontalAlignment="Right" Foreground="{DynamicResource WidgetSecondaryTextBrush}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right">
@@ -126,9 +136,9 @@
                         </Style>
                     </StackPanel.Style>
                     <TextBlock Text="게이트웨이" FontSize="10.5"
-                               HorizontalAlignment="Right" Foreground="#FFE4ECFF"/>
+                               HorizontalAlignment="Right" Foreground="{DynamicResource WidgetPrimaryTextBrush}"/>
                     <TextBlock Text="{Binding ActiveProvider.Id}" FontSize="9.5"
-                               HorizontalAlignment="Right" Foreground="{StaticResource MutedBrush}"
+                               HorizontalAlignment="Right" Foreground="{DynamicResource WidgetSecondaryTextBrush}"
                                MaxWidth="72" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
             </Grid>

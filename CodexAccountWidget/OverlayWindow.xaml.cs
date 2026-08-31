@@ -42,12 +42,14 @@ public partial class OverlayWindow : Window
     private readonly Forms.NotifyIcon _trayIcon;
     private readonly Forms.ToolStripMenuItem _autoVisibilityMenuItem;
     private readonly Forms.ToolStripMenuItem _startupMenuItem;
+    private readonly Forms.ToolStripMenuItem _autoContrastMenuItem;
     private bool _isUserHidden;
     private bool _isManuallyShown;
     private bool _codexWindowPresent;
     private DateTime _restartGraceUntil;
     private readonly WinEventCallback _foregroundEventCallback;
     private IntPtr _foregroundEventHook;
+    private bool? _usingDarkWidgetText;
 
     public OverlayWindow(
         MainViewModel viewModel,
@@ -78,7 +80,7 @@ public partial class OverlayWindow : Window
         _liveUsageTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
         _liveUsageTimer.Tick += async (_, _) => await SyncActiveUsageAsync();
 
-        (_trayIcon, _autoVisibilityMenuItem, _startupMenuItem) = CreateTrayIcon();
+        (_trayIcon, _autoVisibilityMenuItem, _startupMenuItem, _autoContrastMenuItem) = CreateTrayIcon();
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         Closed += (_, _) =>
         {
@@ -99,6 +101,7 @@ public partial class OverlayWindow : Window
 
         _startupMenuItem.Checked = _startupRegistration.IsEnabled();
         _autoVisibilityMenuItem.Checked = _viewModel.ShowOnlyWhileCodexIsRunning;
+        _autoContrastMenuItem.Checked = _viewModel.AutoAdjustWidgetTextColor;
         _visibilityTimer.Start();
         _refreshTimer.Start();
         _liveUsageTimer.Start();
@@ -152,7 +155,8 @@ public partial class OverlayWindow : Window
         _liveUsageProfileId = null;
     }
 
-    private (Forms.NotifyIcon TrayIcon, Forms.ToolStripMenuItem AutoVisibility, Forms.ToolStripMenuItem Startup) CreateTrayIcon()
+    private (Forms.NotifyIcon TrayIcon, Forms.ToolStripMenuItem AutoVisibility,
+        Forms.ToolStripMenuItem Startup, Forms.ToolStripMenuItem AutoContrast) CreateTrayIcon()
     {
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("위젯 표시", null, (_, _) => Dispatcher.Invoke(ShowWidget));
@@ -164,6 +168,13 @@ public partial class OverlayWindow : Window
         };
         autoVisibility.Click += (_, _) => Dispatcher.InvokeAsync(ToggleAutoVisibilityAsync);
         menu.Items.Add(autoVisibility);
+
+        var autoContrast = new Forms.ToolStripMenuItem("배경에 맞춰 글자색 자동 조절")
+        {
+            Checked = _viewModel.AutoAdjustWidgetTextColor
+        };
+        autoContrast.Click += (_, _) => Dispatcher.InvokeAsync(ToggleAutoContrastAsync);
+        menu.Items.Add(autoContrast);
 
         var startup = new Forms.ToolStripMenuItem("Windows 시작 시 자동 실행")
         {
@@ -184,7 +195,7 @@ public partial class OverlayWindow : Window
             Visible = true
         };
         trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ShowWidget);
-        return (trayIcon, autoVisibility, startup);
+        return (trayIcon, autoVisibility, startup, autoContrast);
     }
 
     private void ShowAboutWindow()
@@ -214,6 +225,13 @@ public partial class OverlayWindow : Window
 
         _startupMenuItem.Checked = enabled;
         await _viewModel.SetStartWithWindowsAsync(enabled);
+    }
+
+    private async Task ToggleAutoContrastAsync()
+    {
+        var enabled = !_viewModel.AutoAdjustWidgetTextColor;
+        await _viewModel.SetAutoAdjustWidgetTextColorAsync(enabled);
+        _autoContrastMenuItem.Checked = enabled;
     }
 
     private void ConfigureWindow()
@@ -315,8 +333,32 @@ public partial class OverlayWindow : Window
         // z-order here.
         SetWindowPos(handle, HwndTopmost, 0, 0, 0, 0,
             SwpNoSize | SwpNoMove | SwpNoActivate | SwpShowWindow);
+        UpdateWidgetTextContrast(taskbar, source.CompositionTarget.TransformToDevice.M11);
 
         _panel?.Reposition(this);
+    }
+
+    private void UpdateWidgetTextContrast(TaskbarLocator.NativeRect taskbar, double scaleX)
+    {
+        var useDarkText = false;
+        if (_viewModel.AutoAdjustWidgetTextColor)
+        {
+            var widgetRight = taskbar.Left + (int)Math.Ceiling(ActualWidth * scaleX);
+            if (!TaskbarContrastDetector.TryShouldUseDarkText(taskbar, widgetRight, out useDarkText))
+                return;
+        }
+
+        if (_usingDarkWidgetText == useDarkText) return;
+        _usingDarkWidgetText = useDarkText;
+        Resources["WidgetPrimaryTextBrush"] = new SolidColorBrush(useDarkText
+            ? System.Windows.Media.Color.FromRgb(28, 31, 36)
+            : System.Windows.Media.Color.FromRgb(245, 247, 255));
+        Resources["WidgetSecondaryTextBrush"] = new SolidColorBrush(useDarkText
+            ? System.Windows.Media.Color.FromRgb(74, 82, 92)
+            : System.Windows.Media.Color.FromRgb(167, 167, 167));
+        Resources["WidgetAccentTextBrush"] = new SolidColorBrush(useDarkText
+            ? System.Windows.Media.Color.FromRgb(35, 54, 84)
+            : System.Windows.Media.Color.FromRgb(216, 228, 255));
     }
 
     private void AttachToTaskbar(IntPtr windowHandle, IntPtr taskbarHandle = default)
@@ -353,7 +395,11 @@ public partial class OverlayWindow : Window
     private void OnOverlayRightClicked(object sender, MouseButtonEventArgs e)
     {
         _panel?.Hide();
-        _widgetMenu ??= new WidgetMenuWindow(HideFromMenu, ExitApplication);
+        _widgetMenu ??= new WidgetMenuWindow(
+            HideFromMenu,
+            ExitApplication,
+            ToggleAutoContrastAsync,
+            () => _viewModel.AutoAdjustWidgetTextColor);
         _widgetMenu.ShowMenu(this);
         e.Handled = true;
     }
@@ -391,6 +437,14 @@ public partial class OverlayWindow : Window
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(MainViewModel.AutoAdjustWidgetTextColor))
+        {
+            _autoContrastMenuItem.Checked = _viewModel.AutoAdjustWidgetTextColor;
+            _usingDarkWidgetText = null;
+            PositionOverTaskbar();
+            return;
+        }
+
         if (e.PropertyName == nameof(MainViewModel.HasSwitchError))
         {
             if (_viewModel.HasSwitchError)

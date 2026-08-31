@@ -9,8 +9,13 @@
         <SolidColorBrush x:Key="AccentBrush" Color="#FF7CA7FF"/>
         <SolidColorBrush x:Key="MutedBrush" Color="#FFA7A7A7"/>
         <Style TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="Foreground" Value="White"/>
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+            <Setter Property="TextOptions.TextHintingMode" Value="Fixed"/>
+            <Setter Property="TextOptions.TextRenderingMode" Value="Grayscale"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
         </Style>
         <Style x:Key="FlatButton" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
