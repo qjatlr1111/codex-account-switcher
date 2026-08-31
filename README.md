@@ -83,7 +83,7 @@ Build-Installer.cmd
 또는 PowerShell에서 실행합니다.
 
 ```powershell
-./scripts/Build-Installer.ps1 -ApplicationVersion 1.1.5
+./scripts/Build-Installer.ps1 -ApplicationVersion 1.1.7
 ```
 
 출력은 다음과 같습니다.

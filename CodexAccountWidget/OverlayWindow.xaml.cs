@@ -24,8 +24,6 @@ public partial class OverlayWindow : Window
     private const uint SwpNoMove = 0x0002;
     private const uint SwpNoActivate = 0x0010;
     private const uint SwpShowWindow = 0x0040;
-    private const uint EventSystemForeground = 0x0003;
-    private const uint WineventOutofcontext = 0x0000;
     private static readonly IntPtr HwndTopmost = new(-1);
 
     private readonly MainViewModel _viewModel;
@@ -38,8 +36,11 @@ public partial class OverlayWindow : Window
     private readonly DispatcherTimer _refreshTimer;
     private readonly DispatcherTimer _liveUsageTimer;
     private readonly DispatcherTimer _updateCheckTimer;
+    private readonly SemaphoreSlim _visibilityGate = new(1, 1);
     private readonly SemaphoreSlim _liveUsageGate = new(1, 1);
     private readonly SemaphoreSlim _updateCheckGate = new(1, 1);
+    private DateTime _nextLiveUsageReconnectUtc;
+    private TimeSpan _liveUsageReconnectDelay = TimeSpan.FromSeconds(10);
     private CodexAppServerClient? _liveUsageClient;
     private string? _liveUsageProfileId;
     private AccountPanelWindow? _panel;
@@ -55,9 +56,9 @@ public partial class OverlayWindow : Window
     private bool _isManuallyShown;
     private bool _codexWindowPresent;
     private DateTime _restartGraceUntil;
-    private readonly WinEventCallback _foregroundEventCallback;
-    private IntPtr _foregroundEventHook;
     private bool? _usingDarkWidgetText;
+    private bool _hasTaskbarBounds;
+    private TaskbarLocator.NativeRect _lastTaskbarBounds;
 
     public OverlayWindow(
         MainViewModel viewModel,
@@ -75,7 +76,6 @@ public partial class OverlayWindow : Window
         _diagnosticMode = Environment.GetCommandLineArgs()
             .Any(argument => argument.Equals("--diagnostic", StringComparison.OrdinalIgnoreCase));
         if (_diagnosticMode) ShowInTaskbar = true;
-        _foregroundEventCallback = OnForegroundWindowChanged;
 
         SourceInitialized += (_, _) => ConfigureWindow();
 
@@ -91,6 +91,7 @@ public partial class OverlayWindow : Window
 
         _liveUsageTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
         _liveUsageTimer.Tick += async (_, _) => await SyncActiveUsageAsync();
+        _viewModel.PrepareForConnectionSwitchAsync = PauseLiveUsageForSwitchAsync;
         _updateCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(6) };
         _updateCheckTimer.Tick += async (_, _) => await CheckForUpdatesAsync(manual: false);
 
@@ -100,13 +101,10 @@ public partial class OverlayWindow : Window
         Closed += (_, _) =>
         {
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            if (_viewModel.PrepareForConnectionSwitchAsync == PauseLiveUsageForSwitchAsync)
+                _viewModel.PrepareForConnectionSwitchAsync = null;
             _updateCheckTimer.Stop();
             _trayIcon.Dispose();
-            if (_foregroundEventHook != IntPtr.Zero)
-            {
-                UnhookWinEvent(_foregroundEventHook);
-                _foregroundEventHook = IntPtr.Zero;
-            }
         };
     }
 
@@ -138,6 +136,7 @@ public partial class OverlayWindow : Window
     {
         var profile = _viewModel.ActiveProfile;
         if (!_codexWindowPresent || !IsVisible || _viewModel.IsSwitching || profile is null ||
+            (_liveUsageClient is null && DateTime.UtcNow < _nextLiveUsageReconnectUtc) ||
             !await _liveUsageGate.WaitAsync(0)) return;
 
         try
@@ -154,11 +153,16 @@ public partial class OverlayWindow : Window
             }
 
             await _viewModel.RefreshActiveFromCurrentAccountAsync(_liveUsageClient);
+            _nextLiveUsageReconnectUtc = default;
+            _liveUsageReconnectDelay = TimeSpan.FromSeconds(10);
         }
         catch
         {
             // 일시적인 연결 오류에서는 기존 사용량을 유지하고 다음 주기에 재연결합니다.
             await DisposeLiveUsageClientAsync();
+            _nextLiveUsageReconnectUtc = DateTime.UtcNow + _liveUsageReconnectDelay;
+            _liveUsageReconnectDelay = TimeSpan.FromSeconds(
+                Math.Min(_liveUsageReconnectDelay.TotalSeconds * 2, 120));
         }
         finally
         {
@@ -171,6 +175,22 @@ public partial class OverlayWindow : Window
         if (_liveUsageClient is not null) await _liveUsageClient.DisposeAsync();
         _liveUsageClient = null;
         _liveUsageProfileId = null;
+    }
+
+    private async Task PauseLiveUsageForSwitchAsync()
+    {
+        _liveUsageTimer.Stop();
+        await _liveUsageGate.WaitAsync();
+        try
+        {
+            await DisposeLiveUsageClientAsync();
+            _nextLiveUsageReconnectUtc = default;
+            _liveUsageReconnectDelay = TimeSpan.FromSeconds(10);
+        }
+        finally
+        {
+            _liveUsageGate.Release();
+        }
     }
 
     private (Forms.NotifyIcon TrayIcon, Forms.ToolStripMenuItem AutoVisibility,
@@ -340,66 +360,52 @@ public partial class OverlayWindow : Window
         var style = GetWindowLongPtr(handle, GwlExStyle).ToInt64();
         SetWindowLongPtr(handle, GwlExStyle, new IntPtr(style | WsExToolWindow | WsExNoActivate));
         AttachToTaskbar(handle);
-        _foregroundEventHook = SetWinEventHook(
-            EventSystemForeground,
-            EventSystemForeground,
-            IntPtr.Zero,
-            _foregroundEventCallback,
-            0,
-            0,
-            WineventOutofcontext);
-    }
-
-    private void OnForegroundWindowChanged(
-        IntPtr hook,
-        uint eventType,
-        IntPtr windowHandle,
-        int objectId,
-        int childId,
-        uint eventThread,
-        uint eventTime)
-    {
-        Dispatcher.BeginInvoke(DispatcherPriority.Send, () =>
-        {
-            if (IsVisible) PositionOverTaskbar();
-        });
     }
 
     private async Task MonitorCodexAsync()
     {
-        if (_diagnosticMode)
+        if (!await _visibilityGate.WaitAsync(0)) return;
+
+        try
         {
-            if (IsVisible) PositionOverTaskbar();
-            return;
+            if (_diagnosticMode)
+            {
+                if (IsVisible) PositionOverTaskbar();
+                return;
+            }
+
+            var wasPresent = _codexWindowPresent;
+            _codexWindowPresent = await Task.Run(_codexDesktop.HasRunningWindow);
+
+            if (wasPresent && !_codexWindowPresent)
+            {
+                _isUserHidden = false;
+                _isManuallyShown = false;
+            }
+
+            var inRestartGrace = _viewModel.IsSwitching || DateTime.UtcNow < _restartGraceUntil;
+            var shouldShow = _viewModel.ShowOnlyWhileCodexIsRunning
+                ? _viewModel.HasSwitchError || _isManuallyShown || inRestartGrace ||
+                  (_codexWindowPresent && !_isUserHidden)
+                : !_isUserHidden;
+
+            if (!shouldShow)
+            {
+                HideWidgetCore();
+                return;
+            }
+
+            var becameVisible = ShowWidgetCore();
+            if (becameVisible && _codexWindowPresent)
+                await _viewModel.RefreshAllAsync();
         }
-
-        var wasPresent = _codexWindowPresent;
-        _codexWindowPresent = _codexDesktop.HasRunningWindow();
-
-        if (wasPresent && !_codexWindowPresent)
+        finally
         {
-            _isUserHidden = false;
-            _isManuallyShown = false;
+            _visibilityGate.Release();
         }
-
-        var inRestartGrace = _viewModel.IsSwitching || DateTime.UtcNow < _restartGraceUntil;
-        var shouldShow = _viewModel.ShowOnlyWhileCodexIsRunning
-            ? _viewModel.HasSwitchError || _isManuallyShown || inRestartGrace ||
-              (_codexWindowPresent && !_isUserHidden)
-            : !_isUserHidden;
-
-        if (!shouldShow)
-        {
-            HideWidgetCore();
-            return;
-        }
-
-        var becameVisible = ShowWidgetCore();
-        if (becameVisible && _codexWindowPresent)
-            await _viewModel.RefreshAllAsync();
     }
 
-    private void PositionOverTaskbar()
+    private void PositionOverTaskbar(bool force = false)
     {
         if (!IsVisible) return;
 
@@ -408,6 +414,15 @@ public partial class OverlayWindow : Window
             HideWidgetCore();
             return;
         }
+
+        var boundsChanged = !_hasTaskbarBounds ||
+                            taskbar.Left != _lastTaskbarBounds.Left ||
+                            taskbar.Top != _lastTaskbarBounds.Top ||
+                            taskbar.Right != _lastTaskbarBounds.Right ||
+                            taskbar.Bottom != _lastTaskbarBounds.Bottom;
+        if (!force && !boundsChanged) return;
+        _lastTaskbarBounds = taskbar;
+        _hasTaskbarBounds = true;
 
         var source = PresentationSource.FromVisual(this);
         if (source?.CompositionTarget is null) return;
@@ -523,7 +538,7 @@ public partial class OverlayWindow : Window
     {
         var becameVisible = !IsVisible;
         if (becameVisible) Show();
-        PositionOverTaskbar();
+        PositionOverTaskbar(force: becameVisible);
         return becameVisible;
     }
 
@@ -540,7 +555,7 @@ public partial class OverlayWindow : Window
         {
             _autoContrastMenuItem.Checked = _viewModel.AutoAdjustWidgetTextColor;
             _usingDarkWidgetText = null;
-            PositionOverTaskbar();
+            PositionOverTaskbar(force: true);
             return;
         }
 
@@ -564,6 +579,8 @@ public partial class OverlayWindow : Window
         else
         {
             _restartGraceUntil = DateTime.UtcNow.AddSeconds(10);
+            _liveUsageTimer.Start();
+            _ = SyncActiveUsageAsync();
         }
     }
 
@@ -589,27 +606,4 @@ public partial class OverlayWindow : Window
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowPos(IntPtr windowHandle, IntPtr insertAfter,
         int x, int y, int width, int height, uint flags);
-
-    private delegate void WinEventCallback(
-        IntPtr hook,
-        uint eventType,
-        IntPtr windowHandle,
-        int objectId,
-        int childId,
-        uint eventThread,
-        uint eventTime);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr SetWinEventHook(
-        uint eventMin,
-        uint eventMax,
-        IntPtr eventHookModule,
-        WinEventCallback callback,
-        uint processId,
-        uint threadId,
-        uint flags);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool UnhookWinEvent(IntPtr eventHook);
 }

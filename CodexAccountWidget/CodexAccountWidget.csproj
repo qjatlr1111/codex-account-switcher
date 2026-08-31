@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>CodexAccountSwitcher</AssemblyName>
     <RootNamespace>CodexAccountWidget</RootNamespace>
-    <Version>1.1.6</Version>
+    <Version>1.1.7</Version>
     <AssemblyTitle>Codex Account Switcher</AssemblyTitle>
     <Product>Codex Account Switcher</Product>
     <Description>작업 표시줄에서 Codex 계정과 사용량을 확인하고 전환하는 Windows 위젯</Description>

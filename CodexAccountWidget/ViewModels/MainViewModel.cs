@@ -28,6 +28,7 @@ public sealed class MainViewModel(
     private readonly SemaphoreSlim _accountOperationGate = new(1, 1);
     private CancellationTokenSource? _refreshCancellation;
     private CancellationTokenSource? _loginCancellation;
+    internal Func<Task>? PrepareForConnectionSwitchAsync { get; set; }
 
     public ObservableCollection<AccountProfile> Profiles { get; } = [];
     public ObservableCollection<ModelProviderOption> Providers { get; } = [];
@@ -237,6 +238,12 @@ public sealed class MainViewModel(
             if (profile.IsActive) return;
 
             IsBusy = true;
+            if (PrepareForConnectionSwitchAsync is not null)
+            {
+                Message = "실시간 갱신을 종료하고 있습니다";
+                await PrepareForConnectionSwitchAsync();
+            }
+
             Message = "Codex를 종료하고 있습니다";
             launchTarget = await restarter.StopAsync();
 
@@ -307,6 +314,12 @@ public sealed class MainViewModel(
             if (provider.IsActive) return;
 
             IsBusy = true;
+            if (PrepareForConnectionSwitchAsync is not null)
+            {
+                Message = "실시간 갱신을 종료하고 있습니다";
+                await PrepareForConnectionSwitchAsync();
+            }
+
             Message = "Codex를 종료하고 있습니다";
             launchTarget = await restarter.StopAsync();
 

@@ -21,13 +21,15 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        Directory.CreateDirectory(_codexHome);
-
-        var startInfo = CreateAppServerStartInfo();
-        startInfo.Environment["CODEX_HOME"] = _codexHome;
-
-        _process = Process.Start(startInfo)
+        _process = await Task.Run(() =>
+        {
+            Directory.CreateDirectory(_codexHome);
+            var startInfo = CreateAppServerStartInfo();
+            startInfo.Environment["CODEX_HOME"] = _codexHome;
+            return Process.Start(startInfo)
                    ?? throw new InvalidOperationException("Codex App Server를 시작하지 못했습니다.");
+        }, cancellationToken).ConfigureAwait(false);
+
         _input = _process.StandardInput;
         _input.AutoFlush = true;
         _readerTask = ReadLoopAsync(_process.StandardOutput, _lifetime.Token);
@@ -41,9 +43,9 @@ public sealed class CodexAppServerClient : IAsyncDisposable
                 title = "Codex Account Widget",
                 version = "0.1.0"
             }
-        }, cancellationToken);
+        }, cancellationToken).ConfigureAwait(false);
 
-        await SendNotificationAsync("initialized", new { });
+        await SendNotificationAsync("initialized", new { }).ConfigureAwait(false);
     }
 
     private static ProcessStartInfo CreateAppServerStartInfo()
@@ -119,8 +121,9 @@ public sealed class CodexAppServerClient : IAsyncDisposable
 
         try
         {
-            await WriteAsync(new { method, id, @params = parameters });
-            return await completion.Task.WaitAsync(TimeSpan.FromSeconds(35), cancellationToken);
+            await WriteAsync(new { method, id, @params = parameters }).ConfigureAwait(false);
+            return await completion.Task.WaitAsync(TimeSpan.FromSeconds(35), cancellationToken)
+                .ConfigureAwait(false);
         }
         finally
         {
@@ -135,14 +138,14 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         if (_input is null) throw new InvalidOperationException("App Server가 시작되지 않았습니다.");
         var json = JsonSerializer.Serialize(message);
-        await _input.WriteLineAsync(json);
+        await _input.WriteLineAsync(json).ConfigureAwait(false);
     }
 
     private async Task ReadLoopAsync(StreamReader reader, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            var line = await reader.ReadLineAsync(cancellationToken);
+            var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
             if (line is null) break;
 
             using var document = JsonDocument.Parse(line);
@@ -184,7 +187,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     private static async Task DrainErrorsAsync(StreamReader reader, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested &&
-               await reader.ReadLineAsync(cancellationToken) is not null)
+               await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is not null)
         {
             // 인증 정보가 포함될 가능성을 피하기 위해 stderr를 로그로 남기지 않습니다.
         }
@@ -194,16 +197,29 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         _lifetime.Cancel();
 
-        try { _input?.Close(); } catch { }
-
-        if (_process is { HasExited: false })
+        try
         {
-            try { _process.Kill(true); } catch { }
+            if (_input is not null)
+                await _input.DisposeAsync().ConfigureAwait(false);
+        }
+        catch { }
+
+        var process = _process;
+        if (process is not null)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    if (!process.HasExited) process.Kill(true);
+                }
+                catch { }
+            }).ConfigureAwait(false);
         }
 
         if (_readerTask is not null)
         {
-            try { await _readerTask; } catch { }
+            try { await _readerTask.ConfigureAwait(false); } catch { }
         }
 
         _process?.Dispose();
