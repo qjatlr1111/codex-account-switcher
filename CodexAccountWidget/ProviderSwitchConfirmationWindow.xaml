@@ -1,0 +1,46 @@
+<Window x:Class="CodexAccountWidget.ProviderSwitchConfirmationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Model provider 변경 확인"
+        Width="330" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None" ResizeMode="NoResize"
+        ShowInTaskbar="False" Topmost="True"
+        AllowsTransparency="True" Background="Transparent" Opacity="0">
+    <Border Margin="8" Padding="18" CornerRadius="12" Background="#F41F1F1F">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="24" ShadowDepth="5" Opacity="0.5"/>
+        </Border.Effect>
+        <StackPanel>
+            <TextBlock Text="Model provider를 변경할까요?" FontSize="15" FontWeight="SemiBold"/>
+            <TextBlock Text="Codex가 종료된 뒤 선택한 provider로 다시 실행됩니다."
+                       Margin="0,5,0,14" FontSize="10.5"
+                       Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"/>
+
+            <Border Padding="12,10" CornerRadius="9" Background="#20FFFFFF">
+                <StackPanel>
+                    <TextBlock Text="변경할 provider" FontSize="9.5"
+                               Foreground="{StaticResource MutedBrush}"/>
+                    <TextBlock Text="{Binding DisplayName}" Margin="0,3,0,0"
+                               FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Id}" Margin="0,4,0,0" FontSize="10"
+                               Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </Border>
+
+            <Grid Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Content="취소" Height="36" Style="{StaticResource FlatButton}"
+                        IsCancel="True" Click="OnCancelClicked"/>
+                <Button Grid.Column="2" Content="이 provider로 변경" Height="36"
+                        Background="#FF4169A8" BorderBrush="Transparent"
+                        Style="{StaticResource FlatButton}" IsDefault="True"
+                        Click="OnConfirmClicked"/>
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>

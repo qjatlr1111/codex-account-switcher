@@ -36,8 +36,9 @@ public partial class App : System.Windows.Application
 
             var store = new ProfileStore();
             var accounts = new CodexAccountService();
+            var config = new CodexConfigService();
             var restarter = new CodexDesktopRestartService();
-            var viewModel = new MainViewModel(store, accounts, restarter);
+            var viewModel = new MainViewModel(store, accounts, config, restarter);
 
             await viewModel.InitializeAsync(refreshUsage: false);
             _overlay = new OverlayWindow(viewModel, restarter, new StartupRegistrationService());

@@ -31,6 +31,8 @@ Windows 11 작업 표시줄의 왼쪽 영역을 덮어 현재 Codex 계정과 �
 - 계정별 이메일, 요금제, 단기·주간 잔여량 표시
 - `＋ 계정 추가`를 누르면 공식 Codex 브라우저 로그인 실행
 - 계정 항목을 누르면 확인 다이얼로그를 표시하고, 승인한 경우에만 인증 전환 후 Codex 데스크톱 앱 자동 재시작
+- `~/.codex/config.toml`의 `[model_providers.<id>]`를 자동 탐지해 회사 게이트웨이 provider 선택
+- provider 선택 시 최상위 `model_provider`를 적용하고, ChatGPT 계정 선택 시 해당 줄만 주석 처리해 provider 정의 보존
 - 이전 Codex 프로세스가 완전히 정리된 상태를 확인한 뒤 Windows 패키지 앱 활성화를 한 번만 요청
 - 새 Codex 프로세스가 아니라 실제 표시 창이 열린 경우에만 재시작 완료로 판정
 - 프로세스만 시작되고 창이 열리지 않으면 중복 실행하지 않고 30초 안에 명확한 실패 안내 표시
@@ -81,7 +83,7 @@ Build-Installer.cmd
 또는 PowerShell에서 실행합니다.
 
 ```powershell
-./scripts/Build-Installer.ps1 -ApplicationVersion 1.1.1
+./scripts/Build-Installer.ps1 -ApplicationVersion 1.1.4
 ```
 
 출력은 다음과 같습니다.
@@ -120,6 +122,8 @@ Public 저장소에는 실제 사용자의 이메일, 액세스 토큰, `auth.js
 3. 열린 브라우저에서 추가할 ChatGPT 계정으로 로그인합니다.
 4. 로그인이 끝나면 이메일과 사용량이 목록에 추가됩니다.
 5. 목록의 계정을 누르면 Codex가 종료되고, 해당 인증 캐시가 기본 Codex 인증 위치에 적용된 뒤 Codex가 자동으로 다시 실행됩니다.
+
+`config.toml`에 custom model provider가 있으면 계정 목록 위에 provider 선택 항목이 표시됩니다. provider를 선택하면 최상위 `model_provider` 값이 해당 id로 설정됩니다. 이후 ChatGPT 계정을 선택하면 위젯이 그 선택 줄을 주석 처리하며, `[model_providers.<id>]` 안의 게이트웨이 주소와 인증 설정은 변경하거나 삭제하지 않습니다.
 
 계정을 등록한 직후에는 자동으로 전환하지 않습니다. 계정 전환은 `Codex 정상 종료 요청 → 최대 5초 대기 → 남아 있는 Codex 패키지 프로세스 종료 → 약 1초 동안 완전 종료 상태 확인 → 인증 캐시 전환 → Windows 패키지 앱 활성화 → 실제 표시 창 확인` 순서로 처리됩니다. 실행 요청 후 표시 창이 열리지 않으면 한 번 더 실행을 시도하고, 두 번 모두 실패하면 직접 실행 안내를 표시합니다. 실행 중인 작업과 작성 중인 입력은 중단될 수 있으므로 계정을 누르기 전에 중요한 작업이 끝났는지 확인해야 합니다. 위젯 프로세스는 종료되지 않습니다.
 

@@ -66,16 +66,70 @@
                 </Border>
 
                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ActiveProfile}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
                     <TextBlock Text="{Binding ActiveProfile.Email, TargetNullValue=Codex 계정}" FontSize="11.5"
                                FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                     <TextBlock Text="{Binding ActiveProfile.PlanLabel}" FontSize="9.5" Foreground="{StaticResource MutedBrush}"/>
                 </StackPanel>
 
+                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ActiveProvider}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="{Binding ActiveProvider.DisplayName}" FontSize="11.5"
+                               FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="MODEL PROVIDER" FontSize="9.5" Foreground="{StaticResource MutedBrush}"/>
+                </StackPanel>
+
                 <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ActiveProfile}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
                     <TextBlock Text="{Binding ActiveProfile.PrimaryText, TargetNullValue=사용량 --}" FontSize="10.5"
                                HorizontalAlignment="Right" Foreground="#FFE4ECFF"/>
                     <TextBlock Text="{Binding ActiveProfile.SecondaryText}" FontSize="9.5"
                                HorizontalAlignment="Right" Foreground="{StaticResource MutedBrush}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ActiveProvider}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="게이트웨이" FontSize="10.5"
+                               HorizontalAlignment="Right" Foreground="#FFE4ECFF"/>
+                    <TextBlock Text="{Binding ActiveProvider.Id}" FontSize="9.5"
+                               HorizontalAlignment="Right" Foreground="{StaticResource MutedBrush}"
+                               MaxWidth="72" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
             </Grid>
             </Grid>

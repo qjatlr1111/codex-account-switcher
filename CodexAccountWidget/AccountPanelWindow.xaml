@@ -47,8 +47,8 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="Codex 계정" FontSize="15" FontWeight="SemiBold"/>
-                    <TextBlock Text="계정을 누르면 Codex가 새 계정으로 재시작됩니다" FontSize="10.5"
+                    <TextBlock Text="Codex 연결" FontSize="15" FontWeight="SemiBold"/>
+                    <TextBlock Text="provider 또는 계정을 누르면 Codex가 다시 시작됩니다" FontSize="10.5"
                                Foreground="{StaticResource MutedBrush}" Margin="0,2,0,0"/>
                 </StackPanel>
                 <Button Grid.Column="1" Content="↻" Width="30" Height="30" Style="{StaticResource FlatButton}"
@@ -58,7 +58,126 @@
             <Border Grid.Row="1" Height="1" Background="#24FFFFFF"/>
 
             <ScrollViewer Grid.Row="2" MaxHeight="380" VerticalScrollBarVisibility="Auto" Margin="0,8,0,6">
-                <Grid>
+                <StackPanel>
+                <StackPanel Margin="0,0,0,8">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Providers.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="MODEL PROVIDERS" Margin="6,1,6,6" FontSize="9.5"
+                               Foreground="{StaticResource MutedBrush}"/>
+                    <ItemsControl ItemsSource="{Binding Providers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Margin="0,0,0,6" Padding="0" HorizontalContentAlignment="Stretch"
+                                        Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                        OverridesDefaultStyle="True" Click="OnProviderClicked">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <ContentPresenter HorizontalAlignment="Stretch"/>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                    <Border Background="#01000000" CornerRadius="8">
+                                        <Border.Triggers>
+                                            <EventTrigger RoutedEvent="MouseEnter">
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="ProviderHoverSurface"
+                                                                         Storyboard.TargetProperty="Opacity"
+                                                                         To="1" Duration="0:0:0.12">
+                                                            <DoubleAnimation.EasingFunction>
+                                                                <CubicEase EasingMode="EaseOut"/>
+                                                            </DoubleAnimation.EasingFunction>
+                                                        </DoubleAnimation>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </EventTrigger>
+                                            <EventTrigger RoutedEvent="MouseLeave">
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="ProviderHoverSurface"
+                                                                         Storyboard.TargetProperty="Opacity"
+                                                                         To="0" Duration="0:0:0.16">
+                                                            <DoubleAnimation.EasingFunction>
+                                                                <CubicEase EasingMode="EaseOut"/>
+                                                            </DoubleAnimation.EasingFunction>
+                                                        </DoubleAnimation>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </EventTrigger>
+                                        </Border.Triggers>
+                                        <Grid>
+                                            <Border x:Name="ProviderHoverSurface" CornerRadius="8"
+                                                    Background="{StaticResource AccountHoverBrush}" Opacity="0"
+                                                    IsHitTestVisible="False"/>
+                                            <Grid Margin="10,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="5"/>
+                                                    <ColumnDefinition Width="10"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Background="{StaticResource AccentBrush}" CornerRadius="3">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Opacity" Value="0"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                                    <Setter Property="Opacity" Value="1"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                </Border>
+                                                <StackPanel Grid.Column="2" HorizontalAlignment="Left">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding DisplayName}" FontSize="12"
+                                                                   FontWeight="SemiBold" MaxWidth="205"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="  현재" FontSize="9.5"
+                                                                   Foreground="{StaticResource AccentBrush}">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Id}" Margin="0,3,0,0" FontSize="9.5"
+                                                               Foreground="{StaticResource MutedBrush}"
+                                                               MaxWidth="205" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="3" HorizontalAlignment="Right"
+                                                            VerticalAlignment="Center">
+                                                    <TextBlock Text="게이트웨이" FontSize="11"
+                                                               HorizontalAlignment="Right"/>
+                                                    <TextBlock Text="MODEL PROVIDER" FontSize="10"
+                                                               Foreground="{StaticResource MutedBrush}"
+                                                               HorizontalAlignment="Right" Margin="0,2,0,0"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Border Height="1" Margin="0,2,0,8" Background="#24FFFFFF"/>
+                </StackPanel>
+
+                <TextBlock Text="CHATGPT ACCOUNTS" Margin="6,1,6,6" FontSize="9.5"
+                           Foreground="{StaticResource MutedBrush}"/>
                 <TextBlock Text="등록된 계정이 없습니다" Foreground="{StaticResource MutedBrush}"
                            HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,12"
                            FontSize="10.5">
@@ -170,7 +289,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                </Grid>
+                </StackPanel>
             </ScrollViewer>
 
             <Button Grid.Row="3" Content="＋ 계정 추가" Style="{StaticResource FlatButton}"
@@ -212,12 +331,38 @@
                         </Ellipse.Triggers>
                     </Ellipse>
                 </Grid>
-                <TextBlock Text="계정을 변경하고 있습니다" FontSize="14" FontWeight="SemiBold"
+                <TextBlock Text="Codex 연결을 변경하고 있습니다" FontSize="14" FontWeight="SemiBold"
                            HorizontalAlignment="Center" Margin="0,14,0,0"/>
                 <TextBlock Text="{Binding SwitchingProfile.Email, TargetNullValue=선택한 계정}"
                            FontSize="11" Foreground="{StaticResource AccentBrush}"
                            HorizontalAlignment="Center" Margin="0,5,0,0"
-                           TextTrimming="CharacterEllipsis" MaxWidth="280"/>
+                           TextTrimming="CharacterEllipsis" MaxWidth="280">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SwitchingProvider}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Text="{Binding SwitchingProvider.DisplayName}"
+                           FontSize="11" Foreground="{StaticResource AccentBrush}"
+                           HorizontalAlignment="Center" Margin="0,5,0,0"
+                           TextTrimming="CharacterEllipsis" MaxWidth="280">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SwitchingProvider}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
                 <Border Height="1" Background="#24FFFFFF" Margin="22,14,22,11"/>
                 <TextBlock Text="{Binding Message}" FontSize="10.5"
                            Foreground="{StaticResource MutedBrush}"

@@ -53,6 +53,28 @@ public partial class AccountPanelWindow : Window
     private async void OnAddClicked(object sender, RoutedEventArgs e) => await _viewModel.AddAccountAsync();
     private async void OnRefreshClicked(object sender, RoutedEventArgs e) => await _viewModel.RefreshAllAsync();
 
+    private async void OnProviderClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button { DataContext: ModelProviderOption provider } ||
+            provider.IsActive || _viewModel.IsSwitching)
+            return;
+
+        _isConfirmationOpen = true;
+        try
+        {
+            var dialog = new ProviderSwitchConfirmationWindow(provider)
+            {
+                Owner = this
+            };
+            if (dialog.ShowDialog() == true)
+                await _viewModel.SwitchProviderAsync(provider);
+        }
+        finally
+        {
+            _isConfirmationOpen = false;
+        }
+    }
+
     private async void OnAccountClicked(object sender, RoutedEventArgs e)
     {
         AccountMenuPopup.IsOpen = false;

@@ -10,11 +10,14 @@ namespace CodexAccountWidget.ViewModels;
 public sealed class MainViewModel(
     ProfileStore store,
     CodexAccountService accounts,
+    CodexConfigService config,
     CodexDesktopRestartService restarter) : INotifyPropertyChanged
 {
     private ProfileSettings _settings = new();
     private AccountProfile? _activeProfile;
     private AccountProfile? _switchingProfile;
+    private ModelProviderOption? _activeProvider;
+    private ModelProviderOption? _switchingProvider;
     private string _message = "계정을 추가해 주세요";
     private bool _isBusy;
     private bool _isSwitching;
@@ -25,8 +28,11 @@ public sealed class MainViewModel(
     private CancellationTokenSource? _refreshCancellation;
 
     public ObservableCollection<AccountProfile> Profiles { get; } = [];
+    public ObservableCollection<ModelProviderOption> Providers { get; } = [];
     public AccountProfile? ActiveProfile { get => _activeProfile; private set => Set(ref _activeProfile, value); }
     public AccountProfile? SwitchingProfile { get => _switchingProfile; private set => Set(ref _switchingProfile, value); }
+    public ModelProviderOption? ActiveProvider { get => _activeProvider; private set => Set(ref _activeProvider, value); }
+    public ModelProviderOption? SwitchingProvider { get => _switchingProvider; private set => Set(ref _switchingProvider, value); }
     public string Message { get => _message; private set => Set(ref _message, value); }
     public bool IsBusy { get => _isBusy; private set => Set(ref _isBusy, value); }
     public bool IsSwitching { get => _isSwitching; private set => Set(ref _isSwitching, value); }
@@ -41,9 +47,14 @@ public sealed class MainViewModel(
         StartWithWindows = _settings.StartWithWindows;
         foreach (var profile in _settings.Profiles) Profiles.Add(profile);
 
-        ActiveProfile = Profiles.FirstOrDefault(p => p.Id == _settings.ActiveProfileId)
-                        ?? Profiles.FirstOrDefault();
+        var providerConfiguration = await config.LoadAsync();
+        foreach (var provider in providerConfiguration.Providers) Providers.Add(provider);
+        ActiveProvider = Providers.FirstOrDefault(provider => provider.Id == providerConfiguration.ActiveProviderId);
+        ActiveProfile = ActiveProvider is null
+            ? Profiles.FirstOrDefault(p => p.Id == _settings.ActiveProfileId) ?? Profiles.FirstOrDefault()
+            : null;
         UpdateActiveFlags();
+        UpdateProviderFlags();
 
         if (!refreshUsage || Profiles.Count == 0) return;
         await RefreshAllAsync();
@@ -185,10 +196,13 @@ public sealed class MainViewModel(
             launchTarget = await restarter.StopAsync();
 
             Message = "계정 인증을 전환하고 있습니다";
+            await config.DisableProviderForAccountAsync();
             await accounts.ActivateForNextCodexLaunchAsync(profile);
             ActiveProfile = profile;
+            ActiveProvider = null;
             _settings.ActiveProfileId = profile.Id;
             UpdateActiveFlags();
+            UpdateProviderFlags();
             await PersistAsync();
 
             Message = "새 계정으로 Codex를 다시 실행합니다";
@@ -224,6 +238,75 @@ public sealed class MainViewModel(
         }
     }
 
+    public async Task SwitchProviderAsync(ModelProviderOption provider)
+    {
+        if (provider.IsActive || IsSwitching) return;
+        if (IsBusy && _refreshCancellation is null) return;
+
+        Message = _refreshCancellation is null
+            ? "provider 전환을 준비하고 있습니다"
+            : "진행 중인 사용량 확인을 중지하고 있습니다";
+        SwitchingProvider = provider;
+        IsSwitching = true;
+        HasSwitchError = false;
+        _refreshCancellation?.Cancel();
+
+        var gateAcquired = false;
+        CodexLaunchTarget? launchTarget = null;
+        var launchAttempted = false;
+
+        try
+        {
+            await _accountOperationGate.WaitAsync();
+            gateAcquired = true;
+            if (provider.IsActive) return;
+
+            IsBusy = true;
+            Message = "Codex를 종료하고 있습니다";
+            launchTarget = await restarter.StopAsync();
+
+            Message = "model provider를 전환하고 있습니다";
+            await config.SelectProviderAsync(provider.Id);
+            ActiveProvider = provider;
+            ActiveProfile = null;
+            _settings.ActiveProfileId = null;
+            UpdateActiveFlags();
+            UpdateProviderFlags();
+            await PersistAsync();
+
+            Message = "선택한 provider로 Codex를 다시 실행합니다";
+            launchAttempted = true;
+            await restarter.StartAsync(launchTarget);
+            Message = "provider 전환 및 Codex 재시작 완료";
+        }
+        catch (Exception exception)
+        {
+            HasSwitchError = true;
+            Message = $"전환 실패: {exception.Message}";
+
+            if (launchTarget is not null && !launchAttempted)
+            {
+                try
+                {
+                    launchAttempted = true;
+                    await restarter.StartAsync(launchTarget);
+                    Message += " · Codex는 다시 실행했습니다";
+                }
+                catch (Exception restartException)
+                {
+                    Message += $" · 재실행도 실패: {restartException.Message}";
+                }
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+            IsSwitching = false;
+            SwitchingProvider = null;
+            if (gateAcquired) _accountOperationGate.Release();
+        }
+    }
+
     public async Task RemoveAsync(AccountProfile profile)
     {
         if (profile.IsActive)
@@ -241,6 +324,11 @@ public sealed class MainViewModel(
     private void UpdateActiveFlags()
     {
         foreach (var profile in Profiles) profile.IsActive = ReferenceEquals(profile, ActiveProfile);
+    }
+
+    private void UpdateProviderFlags()
+    {
+        foreach (var provider in Providers) provider.IsActive = ReferenceEquals(provider, ActiveProvider);
     }
 
     private Task PersistAsync()
