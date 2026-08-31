@@ -97,6 +97,24 @@ public sealed class MainViewModel(
         }
     }
 
+    public async Task RefreshActiveFromCurrentAccountAsync(
+        CodexAppServerClient client,
+        CancellationToken cancellationToken = default)
+    {
+        var profile = ActiveProfile;
+        if (profile is null || IsSwitching ||
+            !await _accountOperationGate.WaitAsync(0, cancellationToken)) return;
+
+        try
+        {
+            await accounts.RefreshCurrentIfMatchingAsync(profile, client, cancellationToken);
+        }
+        finally
+        {
+            _accountOperationGate.Release();
+        }
+    }
+
     public async Task AddAccountAsync()
     {
         if (IsBusy) return;

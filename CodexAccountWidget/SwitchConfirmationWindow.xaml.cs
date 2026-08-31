@@ -9,6 +9,7 @@ public partial class SwitchConfirmationWindow : Window
     {
         InitializeComponent();
         DataContext = profile;
+        ContentRendered += (_, _) => EntranceAnimation.Play(this);
     }
 
     private void OnCancelClicked(object sender, RoutedEventArgs e) => DialogResult = false;

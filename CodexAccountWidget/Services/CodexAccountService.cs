@@ -7,6 +7,30 @@ namespace CodexAccountWidget.Services;
 
 public sealed class CodexAccountService
 {
+    public async Task<bool> RefreshCurrentIfMatchingAsync(
+        AccountProfile profile,
+        CodexAppServerClient client,
+        CancellationToken cancellationToken = default)
+    {
+        var account = await client.SendRequestAsync(
+            "account/read",
+            new { refreshToken = false },
+            cancellationToken);
+        if (!account.TryGetProperty("account", out var accountData) ||
+            accountData.ValueKind == JsonValueKind.Null ||
+            !accountData.TryGetProperty("email", out var email) ||
+            !string.Equals(profile.Email, email.GetString(), StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var limits = await client.SendRequestAsync(
+            "account/rateLimits/read",
+            null,
+            cancellationToken);
+        ApplyRateLimits(profile, limits);
+        profile.Status = "실시간 동기화";
+        return true;
+    }
+
     public async Task RefreshAsync(AccountProfile profile, CancellationToken cancellationToken = default)
     {
         profile.IsBusy = true;

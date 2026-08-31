@@ -25,10 +25,12 @@ public partial class WidgetMenuWindow : Window
         Owner ??= overlay;
         Left = overlay.Left;
         Top = overlay.Top;
+        Opacity = 0;
         Show();
         UpdateLayout();
         Top = Math.Max(0, overlay.Top - ActualHeight - 3);
         Activate();
+        EntranceAnimation.Play(this);
     }
 
     private void OnHideClicked(object sender, RoutedEventArgs e)

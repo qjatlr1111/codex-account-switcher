@@ -33,6 +33,16 @@ public partial class AccountPanelWindow : Window
         RepositionToLastOwner();
     }
 
+    public void ShowAnimated(OverlayWindow overlay)
+    {
+        _lastOwner = overlay;
+        PanelSurface.Opacity = 0;
+        Show();
+        RepositionToLastOwner();
+        Activate();
+        EntranceAnimation.Play(PanelSurface, 6, fade: false);
+    }
+
     private void RepositionToLastOwner()
     {
         if (_lastOwner is null) return;
@@ -73,6 +83,7 @@ public partial class AccountPanelWindow : Window
         _contextProfile = profile;
         AccountMenuPopup.PlacementTarget = sender as UIElement;
         AccountMenuPopup.IsOpen = false;
+        AccountMenuSurface.Opacity = 0;
         AccountMenuPopup.IsOpen = true;
         e.Handled = true;
     }
@@ -84,6 +95,9 @@ public partial class AccountPanelWindow : Window
         _contextProfile = null;
         if (profile is not null) await _viewModel.RemoveAsync(profile);
     }
+
+    private void OnAccountMenuOpened(object? sender, EventArgs e) =>
+        EntranceAnimation.Play(AccountMenuSurface);
 
     private void OnDeactivated(object? sender, EventArgs e)
     {

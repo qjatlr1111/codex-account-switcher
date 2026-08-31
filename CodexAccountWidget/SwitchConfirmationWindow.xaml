@@ -6,7 +6,7 @@
         WindowStartupLocation="CenterOwner"
         WindowStyle="None" ResizeMode="NoResize"
         ShowInTaskbar="False" Topmost="True"
-        AllowsTransparency="True" Background="Transparent">
+        AllowsTransparency="True" Background="Transparent" Opacity="0">
     <Border Margin="8" Padding="18" CornerRadius="12"
             Background="#F41F1F1F">
         <Border.Effect>

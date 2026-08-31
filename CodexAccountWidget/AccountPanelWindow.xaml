@@ -15,7 +15,8 @@
         </LinearGradientBrush>
     </Window.Resources>
     <Grid>
-    <Border Margin="6" Padding="10" Background="{StaticResource PanelBrush}"
+    <Border x:Name="PanelSurface" Margin="6" Padding="10"
+            Background="{StaticResource PanelBrush}" Opacity="0"
             BorderBrush="#34FFFFFF" BorderThickness="1" CornerRadius="10">
         <Border.Effect>
             <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.4"/>
@@ -232,8 +233,8 @@
         <Popup x:Name="AccountMenuPopup"
                Placement="MousePoint"
                AllowsTransparency="True" StaysOpen="False"
-               PopupAnimation="Fade">
-            <Border Width="174" Margin="6" Padding="7"
+               Opened="OnAccountMenuOpened">
+            <Border x:Name="AccountMenuSurface" Width="174" Margin="6" Padding="7"
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="#3AFFFFFF" BorderThickness="1" CornerRadius="10">
                 <Border.Effect>
