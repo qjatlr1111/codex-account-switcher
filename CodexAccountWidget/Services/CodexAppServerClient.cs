@@ -23,16 +23,7 @@ public sealed class CodexAppServerClient : IAsyncDisposable
     {
         Directory.CreateDirectory(_codexHome);
 
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "cmd.exe",
-            Arguments = "/d /s /c \"codex app-server --stdio\"",
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
+        var startInfo = CreateAppServerStartInfo();
         startInfo.Environment["CODEX_HOME"] = _codexHome;
 
         _process = Process.Start(startInfo)
@@ -53,6 +44,68 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         }, cancellationToken);
 
         await SendNotificationAsync("initialized", new { });
+    }
+
+    private static ProcessStartInfo CreateAppServerStartInfo()
+    {
+        var command = FindCodexCommand();
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = command,
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        if (Path.GetExtension(command).Equals(".cmd", StringComparison.OrdinalIgnoreCase))
+        {
+            startInfo.FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe";
+            startInfo.ArgumentList.Add("/d");
+            startInfo.ArgumentList.Add("/s");
+            startInfo.ArgumentList.Add("/c");
+            startInfo.ArgumentList.Add(command);
+        }
+
+        startInfo.ArgumentList.Add("app-server");
+        startInfo.ArgumentList.Add("--stdio");
+        return startInfo;
+    }
+
+    private static string FindCodexCommand()
+    {
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var bundledBinRoot = Path.Combine(localAppData, "OpenAI", "Codex", "bin");
+        if (Directory.Exists(bundledBinRoot))
+        {
+            var bundledExecutable = Directory.GetDirectories(bundledBinRoot)
+                .Select(directory => Path.Combine(directory, "codex.exe"))
+                .Where(File.Exists)
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .FirstOrDefault();
+            if (bundledExecutable is not null) return bundledExecutable;
+        }
+
+        var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var directory in pathEntries)
+        {
+            foreach (var fileName in new[] { "codex.exe", "codex.cmd" })
+            {
+                var candidate = Path.Combine(directory, fileName);
+                if (File.Exists(candidate)) return candidate;
+            }
+        }
+
+        var npmCommand = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "npm",
+            "codex.cmd");
+        if (File.Exists(npmCommand)) return npmCommand;
+
+        throw new FileNotFoundException(
+            "Codex CLI를 찾지 못했습니다. Codex 데스크톱 앱 또는 전역 codex 명령을 설치해 주세요.");
     }
 
     public async Task<JsonElement> SendRequestAsync(

@@ -24,7 +24,27 @@ try
     if (!account.TryGetProperty("requiresOpenaiAuth", out _))
         throw new InvalidOperationException("account/read 응답에 requiresOpenaiAuth가 없습니다.");
 
-    Console.WriteLine("PASS: initialize 및 account/read 응답 확인");
+    var loginCompleted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+    client.NotificationReceived += (_, notification) =>
+    {
+        if (notification.Method != "account/login/completed") return;
+        var success = notification.Parameters.TryGetProperty("success", out var value) && value.GetBoolean();
+        loginCompleted.TrySetResult(success);
+    };
+
+    var login = await client.SendRequestAsync("account/login/start", new
+    {
+        type = "chatgpt",
+        useHostedLoginSuccessPage = true,
+        appBrand = "codex"
+    });
+    var loginId = login.GetProperty("loginId").GetString()
+                  ?? throw new InvalidOperationException("loginId가 없습니다.");
+    await client.SendRequestAsync("account/login/cancel", new { loginId });
+    if (await loginCompleted.Task.WaitAsync(TimeSpan.FromSeconds(10)))
+        throw new InvalidOperationException("취소된 로그인의 완료 이벤트가 성공으로 표시됐습니다.");
+
+    Console.WriteLine("PASS: initialize, account/read 및 로그인 취소 응답 확인");
     return 0;
 }
 catch (Exception exception)

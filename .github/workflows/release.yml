@@ -29,7 +29,7 @@ jobs:
         id: version
         shell: powershell
         run: |
-          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '1.1.4' }
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '1.1.5' }
           "value=$version" >> $env:GITHUB_OUTPUT
 
       - name: 단일 EXE와 설치 파일 생성
@@ -56,12 +56,11 @@ jobs:
           $releaseNotes = @'
           ## 주요 변경
 
-          - `config.toml`의 custom model provider를 계정 목록 위에서 자동 탐지
-          - 회사 게이트웨이 provider를 선택하면 `model_provider`를 적용하고 Codex 재시작
-          - ChatGPT 계정을 선택하면 provider 선택 줄만 주석 처리하고 provider 정의는 보존
-          - provider 카드를 계정 카드와 같은 좌측 정렬·hover·활성 표시 스타일로 제공
-          - provider 전환 전에 대상 이름과 ID를 보여주는 확인창 추가
-          - provider 사용 중에는 작업 표시줄 위젯에도 현재 게이트웨이 상태 표시
+          - 브라우저 로그인 중 `로그인 취소` 버튼 제공
+          - 취소 시 Codex App Server에 `account/login/cancel`을 보내 즉시 대기 종료
+          - Explorer에서 실행한 위젯도 설치된 Codex CLI를 안정적으로 탐색
+          - 계정 추가와 사용량 새로고침이 겹칠 때 발생하던 무응답 개선
+          - 기본 브라우저 실행 회귀 수정
 
           ## 보안 및 호환성 안내
 

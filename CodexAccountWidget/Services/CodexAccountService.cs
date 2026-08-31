@@ -91,10 +91,11 @@ public sealed class CodexAccountService
     {
         profile.IsBusy = true;
         profile.Status = "브라우저 로그인 대기 중";
+        string? loginId = null;
+        await using var client = new CodexAppServerClient(profile.HomePath);
 
         try
         {
-            await using var client = new CodexAppServerClient(profile.HomePath);
             var loginCompleted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             client.NotificationReceived += (_, notification) =>
@@ -115,10 +116,13 @@ public sealed class CodexAccountService
                 },
                 cancellationToken);
 
+            loginId = login.GetProperty("loginId").GetString()
+                      ?? throw new InvalidOperationException("로그인 식별자를 받지 못했습니다.");
             var authUrl = login.GetProperty("authUrl").GetString()
                           ?? throw new InvalidOperationException("로그인 주소를 받지 못했습니다.");
 
-            Process.Start(new ProcessStartInfo(authUrl) { UseShellExecute = true });
+            _ = Process.Start(new ProcessStartInfo(authUrl) { UseShellExecute = true })
+                ?? throw new InvalidOperationException("Windows 기본 브라우저를 열지 못했습니다.");
             var success = await loginCompleted.Task.WaitAsync(TimeSpan.FromMinutes(5), cancellationToken);
             if (!success)
             {
@@ -128,6 +132,27 @@ public sealed class CodexAccountService
 
             profile.Status = "로그인 완료";
             return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            if (loginId is not null)
+            {
+                try
+                {
+                    await client.SendRequestAsync(
+                        "account/login/cancel",
+                        new { loginId },
+                        CancellationToken.None);
+                }
+                catch (Exception exception)
+                {
+                    profile.Status = $"로그인 취소 요청 실패: {FriendlyError(exception)}";
+                    return false;
+                }
+            }
+
+            profile.Status = "로그인 취소됨";
+            return false;
         }
         catch (Exception exception)
         {

@@ -51,6 +51,7 @@ public partial class AccountPanelWindow : Window
     }
 
     private async void OnAddClicked(object sender, RoutedEventArgs e) => await _viewModel.AddAccountAsync();
+    private void OnCancelLoginClicked(object sender, RoutedEventArgs e) => _viewModel.CancelLogin();
     private async void OnRefreshClicked(object sender, RoutedEventArgs e) => await _viewModel.RefreshAllAsync();
 
     private async void OnProviderClicked(object sender, RoutedEventArgs e)
@@ -124,7 +125,7 @@ public partial class AccountPanelWindow : Window
     private void OnDeactivated(object? sender, EventArgs e)
     {
         AccountMenuPopup.IsOpen = false;
-        if (_diagnosticMode || _isConfirmationOpen || _viewModel.IsSwitching) return;
+        if (_diagnosticMode || _isConfirmationOpen || _viewModel.IsSwitching || _viewModel.IsLoginPending) return;
         if (IsVisible) Hide();
     }
 

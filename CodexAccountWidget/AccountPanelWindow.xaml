@@ -292,8 +292,32 @@
                 </StackPanel>
             </ScrollViewer>
 
-            <Button Grid.Row="3" Content="＋ 계정 추가" Style="{StaticResource FlatButton}"
-                    HorizontalContentAlignment="Center" Click="OnAddClicked"/>
+            <Grid Grid.Row="3">
+                <Button Content="＋ 계정 추가" HorizontalContentAlignment="Center" Click="OnAddClicked">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource FlatButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLoginPending}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Content="로그인 취소" HorizontalContentAlignment="Center"
+                        Foreground="#FFFFB4AB" Click="OnCancelLoginClicked">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource FlatButton}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLoginPending}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
 
             <TextBlock Grid.Row="4" Text="{Binding Message}" FontSize="9.5" Foreground="{StaticResource MutedBrush}"
                        TextAlignment="Center" Margin="4,8,4,1" TextWrapping="Wrap"/>

@@ -26,6 +26,7 @@ public sealed class MainViewModel(
     private bool _startWithWindows = true;
     private readonly SemaphoreSlim _accountOperationGate = new(1, 1);
     private CancellationTokenSource? _refreshCancellation;
+    private CancellationTokenSource? _loginCancellation;
 
     public ObservableCollection<AccountProfile> Profiles { get; } = [];
     public ObservableCollection<ModelProviderOption> Providers { get; } = [];
@@ -35,6 +36,7 @@ public sealed class MainViewModel(
     public ModelProviderOption? SwitchingProvider { get => _switchingProvider; private set => Set(ref _switchingProvider, value); }
     public string Message { get => _message; private set => Set(ref _message, value); }
     public bool IsBusy { get => _isBusy; private set => Set(ref _isBusy, value); }
+    public bool IsLoginPending => _loginCancellation is not null;
     public bool IsSwitching { get => _isSwitching; private set => Set(ref _isSwitching, value); }
     public bool HasSwitchError { get => _hasSwitchError; private set => Set(ref _hasSwitchError, value); }
     public bool ShowOnlyWhileCodexIsRunning { get => _showOnlyWhileCodexIsRunning; private set => Set(ref _showOnlyWhileCodexIsRunning, value); }
@@ -128,20 +130,40 @@ public sealed class MainViewModel(
 
     public async Task AddAccountAsync()
     {
-        if (IsBusy) return;
-        IsBusy = true;
+        if (IsSwitching) return;
+        if (IsBusy && _refreshCancellation is null)
+        {
+            Message = "다른 계정 작업이 진행 중입니다";
+            return;
+        }
+
+        Message = _refreshCancellation is null
+            ? "새 계정 로그인을 준비하고 있습니다"
+            : "진행 중인 사용량 확인을 중지하고 있습니다";
+        _refreshCancellation?.Cancel();
+
+        var gateAcquired = false;
         AccountProfile? profile = null;
 
         try
         {
+            await _accountOperationGate.WaitAsync();
+            gateAcquired = true;
+            IsBusy = true;
             profile = store.CreatePendingProfile();
             Profiles.Add(profile);
-            var success = await accounts.LoginAsync(profile);
+            using var loginCancellation = new CancellationTokenSource();
+            _loginCancellation = loginCancellation;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsLoginPending)));
+            var success = await accounts.LoginAsync(profile, loginCancellation.Token);
             if (!success)
             {
+                var failureMessage = profile.Status;
                 Profiles.Remove(profile);
                 store.RemoveProfileDirectory(profile);
-                Message = "로그인이 완료되지 않았습니다";
+                Message = loginCancellation.IsCancellationRequested
+                    ? "계정 추가를 취소했습니다"
+                    : $"계정 추가 실패: {failureMessage}";
                 return;
             }
 
@@ -155,6 +177,8 @@ public sealed class MainViewModel(
         }
         finally
         {
+            _loginCancellation = null;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsLoginPending)));
             IsBusy = false;
             try
             {
@@ -165,7 +189,18 @@ public sealed class MainViewModel(
                 HasSwitchError = true;
                 Message = $"계정 목록 저장 실패: {ShortError(exception)}";
             }
+            finally
+            {
+                if (gateAcquired) _accountOperationGate.Release();
+            }
         }
+    }
+
+    public void CancelLogin()
+    {
+        if (_loginCancellation is null) return;
+        Message = "로그인을 취소하고 있습니다";
+        _loginCancellation.Cancel();
     }
 
     public async Task SwitchAsync(AccountProfile profile)
