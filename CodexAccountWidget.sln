@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodexAccountWidget", "Codex
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodexAccountWidget.Smoke", "CodexAccountWidget.Smoke\CodexAccountWidget.Smoke.csproj", "{B5C91DB6-649E-4C3C-B198-52B13D40243F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClaudeAccountWidget", "ClaudeAccountWidget\ClaudeAccountWidget.csproj", "{6F2C1E0A-8D4B-4C7E-9A51-3B7D2E9C4A10}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClaudeAccountWidget.Smoke", "ClaudeAccountWidget.Smoke\ClaudeAccountWidget.Smoke.csproj", "{A3E5B7C9-1D2F-4E6A-8B0C-5D7F9E1A3B24}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,5 +25,13 @@ Global
 		{B5C91DB6-649E-4C3C-B198-52B13D40243F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B5C91DB6-649E-4C3C-B198-52B13D40243F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B5C91DB6-649E-4C3C-B198-52B13D40243F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F2C1E0A-8D4B-4C7E-9A51-3B7D2E9C4A10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F2C1E0A-8D4B-4C7E-9A51-3B7D2E9C4A10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F2C1E0A-8D4B-4C7E-9A51-3B7D2E9C4A10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F2C1E0A-8D4B-4C7E-9A51-3B7D2E9C4A10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3E5B7C9-1D2F-4E6A-8B0C-5D7F9E1A3B24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3E5B7C9-1D2F-4E6A-8B0C-5D7F9E1A3B24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3E5B7C9-1D2F-4E6A-8B0C-5D7F9E1A3B24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3E5B7C9-1D2F-4E6A-8B0C-5D7F9E1A3B24}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

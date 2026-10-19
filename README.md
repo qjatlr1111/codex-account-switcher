@@ -19,6 +19,16 @@ Windows 11 작업 표시줄의 왼쪽 영역을 덮어 현재 Codex 계정과 �
 
 설치형은 Windows 로그인 자동 실행과 시작 메뉴·제거 프로그램 구성이 편리합니다. 무설치형은 파일 하나를 내려받아 바로 실행할 수 있습니다. 두 파일 모두 현재 코드 서명되지 않았기 때문에 처음 실행할 때 Windows SmartScreen 경고가 표시될 수 있습니다.
 
+## Claude 계정 위젯
+
+같은 저장소의 [`ClaudeAccountWidget`](ClaudeAccountWidget/README.md)는 이 위젯을 Claude용으로 옮긴 버전입니다. 작업 표시줄에서 현재 Claude 계정과 5시간·주간 잔여량을 링 게이지로 보여주고, 등록한 계정으로 Claude Code 로그인을 전환합니다. Codex 위젯과 함께 실행하면 그 오른쪽에 나란히 붙습니다.
+
+- [ClaudeAccountSwitcher-Setup.exe (claude-v1.0.0 설치 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.0/ClaudeAccountSwitcher-Setup.exe)
+- [ClaudeAccountSwitcher.exe (claude-v1.0.0 무설치 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.0/ClaudeAccountSwitcher.exe)
+- [Claude 위젯 릴리스 전체 보기](https://github.com/qjatlr1111/codex-account-switcher/releases?q=claude-v&expanded=true)
+
+Claude 위젯은 `claude-v` 태그로 따로 배포하며 "Latest" 릴리스로 표시하지 않습니다. 위의 Codex 다운로드 링크(`releases/latest`)는 계속 Codex 위젯을 가리킵니다. 소스에서는 루트의 `run-claude.cmd`로 실행하고, 배포 파일은 `Build-ClaudeInstaller.cmd`로 만듭니다.
+
 ## 현재 구현된 기능
 
 - Windows 로그인 시 백그라운드 자동 실행

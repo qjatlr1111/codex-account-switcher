@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>ClaudeAccountSwitcher</AssemblyName>
+    <RootNamespace>ClaudeAccountWidget</RootNamespace>
+    <Version>1.0.0</Version>
+    <AssemblyTitle>Claude Account Switcher</AssemblyTitle>
+    <Product>Claude Account Switcher</Product>
+    <Description>작업 표시줄에서 Claude 계정과 사용량을 확인하고 Claude Code 로그인을 전환하는 Windows 위젯</Description>
+    <Authors>qjatlr1111</Authors>
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- WinForms(트레이 아이콘)는 별칭으로만 쓰고, WPF 형식(Point, Brush, Color 등)과 이름이 겹치지 않게 전역 using을 뺍니다. -->
+    <Using Remove="System.Drawing" />
+    <Using Remove="System.Windows.Forms" />
+  </ItemGroup>
+</Project>

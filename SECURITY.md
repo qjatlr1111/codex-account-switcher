@@ -22,3 +22,13 @@ Codex의 `auth.json`에는 액세스 토큰이 들어 있습니다. 비밀번호
 ## 배포 파일
 
 현재 Windows 실행 파일과 설치 프로그램은 코드 서명 인증서로 서명되지 않았습니다. GitHub Release의 `SHA256SUMS.txt`로 파일 해시를 확인할 수 있지만, Windows SmartScreen 경고가 표시될 수 있습니다.
+
+## Claude 계정 위젯
+
+`ClaudeAccountWidget`은 Anthropic의 공식 제품이 아닌 비공식 도구입니다. Claude Code의 `.credentials.json`에는 액세스·리프레시 토큰이 평문으로 들어 있으므로 다음 정보도 공개 이슈·로그·채팅에 첨부하지 마세요.
+
+- `.credentials.json`, `.credentials.widget-backup.json`
+- `%USERPROFILE%\.claude-account-switcher` 폴더
+- `%USERPROFILE%\.claude`의 인증 관련 파일과 `%USERPROFILE%\.claude.json`
+
+앱은 `%USERPROFILE%\.claude-account-switcher`의 ACL을 현재 Windows 사용자, SYSTEM, Administrators로 제한합니다. 토큰은 `api.anthropic.com`, `platform.claude.com`, `console.anthropic.com`에만 전송합니다. 인증정보가 노출됐다면 Claude Code에서 `/logout`한 뒤 claude.ai에서 세션을 정리하고 다시 로그인하세요.

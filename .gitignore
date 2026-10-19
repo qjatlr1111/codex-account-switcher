@@ -15,3 +15,8 @@ dist/
 *.log
 *.sqlite
 *.sqlite-*
+
+# Claude 인증정보와 위젯 로컬 데이터도 절대 커밋하지 않습니다.
+**/.credentials.json
+**/.credentials.widget-backup.json
+.claude-account-switcher/

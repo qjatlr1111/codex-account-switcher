@@ -1,0 +1,476 @@
+<Window x:Class="ClaudeAccountWidget.AccountPanelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:ClaudeAccountWidget.Controls"
+        xmlns:local="clr-namespace:ClaudeAccountWidget"
+        Title="Claude 계정 목록"
+        Width="372" MaxHeight="620" SizeToContent="Height"
+        WindowStyle="None" ResizeMode="NoResize"
+        ShowInTaskbar="False" Topmost="True"
+        AllowsTransparency="True" Background="Transparent"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextHintingMode="Fixed"
+        TextOptions.TextRenderingMode="Grayscale"
+        Deactivated="OnDeactivated">
+    <Window.Resources>
+        <LinearGradientBrush x:Key="AccountHoverBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#26FFE2D2" Offset="0"/>
+            <GradientStop Color="#12FFFFFF" Offset="1"/>
+        </LinearGradientBrush>
+        <local:StepToBrushConverter x:Key="StepBrush" ActiveBrush="{StaticResource CoralGradientBrush}"/>
+
+        <!-- 패널 헤더 아래 흐르는 빛줄기 -->
+        <Storyboard x:Key="ShimmerStoryboard" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="ShimmerShift" Storyboard.TargetProperty="X"
+                             From="-1" To="1" Duration="0:0:2.6" BeginTime="0:0:0.2">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <!-- 전환 중 연출: 궤도 링, 공전하는 점, 숨 쉬는 스파크 -->
+        <Storyboard x:Key="SwitchingStoryboard">
+            <DoubleAnimation Storyboard.TargetName="OrbitOuterRotate" Storyboard.TargetProperty="Angle"
+                             From="0" To="360" Duration="0:0:1.6" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="OrbitInnerRotate" Storyboard.TargetProperty="Angle"
+                             From="360" To="0" Duration="0:0:2.4" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="CometRotate" Storyboard.TargetProperty="Angle"
+                             From="0" To="360" Duration="0:0:1.1" RepeatBehavior="Forever">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="SwitchSparkRotate" Storyboard.TargetProperty="Angle"
+                             From="0" To="180" Duration="0:0:2.2" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="SwitchSparkScale" Storyboard.TargetProperty="ScaleX"
+                             From="0.86" To="1.12" Duration="0:0:0.8" AutoReverse="True" RepeatBehavior="Forever">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="SwitchSparkScale" Storyboard.TargetProperty="ScaleY"
+                             From="0.86" To="1.12" Duration="0:0:0.8" AutoReverse="True" RepeatBehavior="Forever">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="SwitchGlow" Storyboard.TargetProperty="Opacity"
+                             From="0.35" To="1" Duration="0:0:0.8" AutoReverse="True" RepeatBehavior="Forever">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Key="RefreshSpinStoryboard">
+            <DoubleAnimation Storyboard.TargetName="RefreshRotate" Storyboard.TargetProperty="Angle"
+                             From="0" To="360" Duration="0:0:0.9" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="HeaderSparkRotate" Storyboard.TargetProperty="Angle"
+                             By="360" Duration="0:0:3" RepeatBehavior="Forever"/>
+        </Storyboard>
+    </Window.Resources>
+
+    <Grid>
+        <Border x:Name="PanelSurface" Margin="8" Padding="12,12,12,10"
+                Background="{StaticResource PanelBrush}" Opacity="0"
+                BorderThickness="1" CornerRadius="14">
+            <Border.BorderBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#66F3A27C" Offset="0"/>
+                    <GradientStop Color="#22FFFFFF" Offset="0.4"/>
+                    <GradientStop Color="#18FFFFFF" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.BorderBrush>
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="26" ShadowDepth="6" Opacity="0.5" Color="#FF0A0605"/>
+            </Border.Effect>
+
+            <Grid>
+                <!-- 좌상단 은은한 웜 글로우 -->
+                <Ellipse Width="220" Height="120" HorizontalAlignment="Left" VerticalAlignment="Top"
+                         Margin="-40,-50,0,0" Fill="{StaticResource WarmGlowBrush}" Opacity="0.35"
+                         IsHitTestVisible="False"/>
+
+                <Grid x:Name="NormalContent">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSwitching}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 헤더 -->
+                    <Grid Margin="2,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="30" Height="30" VerticalAlignment="Center">
+                            <Ellipse Fill="{StaticResource WarmGlowBrush}" Margin="-6"/>
+                            <Ellipse Fill="#22F3A27C" Stroke="#44F3A27C" StrokeThickness="1"/>
+                            <controls:SparkGlyph Width="15" Height="15" Fill="{StaticResource CoralGradientBrush}"
+                                                 RenderTransformOrigin="0.5,0.5">
+                                <controls:SparkGlyph.RenderTransform>
+                                    <RotateTransform x:Name="HeaderSparkRotate"/>
+                                </controls:SparkGlyph.RenderTransform>
+                            </controls:SparkGlyph>
+                        </Grid>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                            <TextBlock Text="Claude 계정" FontSize="15.5" FontWeight="SemiBold"/>
+                            <TextBlock Text="계정을 누르면 Claude Code 로그인이 전환됩니다" FontSize="10.5"
+                                       Foreground="{StaticResource MutedBrush}" Margin="0,1,0,0"/>
+                        </StackPanel>
+                        <Button Grid.Column="3" Width="32" Height="32" Padding="0"
+                                Style="{StaticResource FlatButton}" ToolTip="사용량 새로고침"
+                                Click="OnRefreshClicked">
+                            <TextBlock Text="↻" FontSize="14" RenderTransformOrigin="0.5,0.55">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="RefreshRotate"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Button>
+                    </Grid>
+
+                    <!-- 흐르는 빛줄기 구분선 -->
+                    <Grid Grid.Row="1" Height="1">
+                        <Border Background="#1FFFFFFF"/>
+                        <Border>
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <LinearGradientBrush.RelativeTransform>
+                                        <TranslateTransform x:Name="ShimmerShift"/>
+                                    </LinearGradientBrush.RelativeTransform>
+                                    <GradientStop Color="#00F3A27C" Offset="0.25"/>
+                                    <GradientStop Color="#FFF3A27C" Offset="0.5"/>
+                                    <GradientStop Color="#00F3A27C" Offset="0.75"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="2" MaxHeight="420" VerticalScrollBarVisibility="Auto" Margin="0,10,0,8">
+                        <StackPanel>
+                            <!-- 현재 로그인 가져오기 카드 -->
+                            <Border Margin="0,0,0,10" Padding="12,10" CornerRadius="10"
+                                    Background="#1AF3A27C" BorderBrush="#3DF3A27C" BorderThickness="1"
+                                    Visibility="{Binding CanImportCurrent, Converter={StaticResource BoolToVisibility}}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="등록되지 않은 로그인이 있습니다" FontSize="11.5" FontWeight="SemiBold"/>
+                                        <TextBlock Text="지금 Claude Code 계정을 그대로 추가합니다" FontSize="9.5"
+                                                   Foreground="{StaticResource MutedBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="가져오기" Height="30" Padding="12,0"
+                                            Style="{StaticResource AccentButton}" Click="OnImportClicked"/>
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Text="CLAUDE ACCOUNTS" Margin="6,0,6,6" FontSize="9.5"
+                                       Foreground="{StaticResource MutedBrush}"/>
+                            <TextBlock Text="등록된 계정이 없습니다" Foreground="{StaticResource MutedBrush}"
+                                       HorizontalAlignment="Center" Margin="0,14" FontSize="10.5">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Profiles.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+
+                            <ItemsControl x:Name="AccountList" ItemsSource="{Binding Profiles}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Margin="0,0,0,6" Padding="0" HorizontalContentAlignment="Stretch"
+                                                Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                                OverridesDefaultStyle="True"
+                                                Click="OnAccountClicked"
+                                                PreviewMouseRightButtonUp="OnAccountRightClicked">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <ContentPresenter HorizontalAlignment="Stretch"/>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                            <Border CornerRadius="10" BorderThickness="1">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="#0DFFFFFF"/>
+                                                        <Setter Property="BorderBrush" Value="#14FFFFFF"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                                <Setter Property="Background" Value="#1EF3A27C"/>
+                                                                <Setter Property="BorderBrush" Value="#5AF3A27C"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Border.Triggers>
+                                                    <EventTrigger RoutedEvent="MouseEnter">
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetName="AccountHoverSurface"
+                                                                                 Storyboard.TargetProperty="Opacity"
+                                                                                 To="1" Duration="0:0:0.14"/>
+                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                                 To="-1.5" Duration="0:0:0.18">
+                                                                    <DoubleAnimation.EasingFunction>
+                                                                        <CubicEase EasingMode="EaseOut"/>
+                                                                    </DoubleAnimation.EasingFunction>
+                                                                </DoubleAnimation>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </EventTrigger>
+                                                    <EventTrigger RoutedEvent="MouseLeave">
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetName="AccountHoverSurface"
+                                                                                 Storyboard.TargetProperty="Opacity"
+                                                                                 To="0" Duration="0:0:0.2"/>
+                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                                 To="0" Duration="0:0:0.22"/>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </EventTrigger>
+                                                </Border.Triggers>
+                                                <Border.RenderTransform>
+                                                    <TranslateTransform/>
+                                                </Border.RenderTransform>
+
+                                                <Grid>
+                                                    <Border x:Name="AccountHoverSurface" CornerRadius="10"
+                                                            Background="{StaticResource AccountHoverBrush}" Opacity="0"
+                                                            IsHitTestVisible="False"/>
+                                                    <Grid Margin="10,9,12,9">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="4"/>
+                                                            <ColumnDefinition Width="10"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- 활성 표시 막대 (글로우) -->
+                                                        <Border Background="{StaticResource CoralGradientBrush}" CornerRadius="2"
+                                                                Visibility="{Binding IsActive, Converter={StaticResource BoolToVisibility}}">
+                                                            <Border.Effect>
+                                                                <DropShadowEffect Color="#FFF3A27C" BlurRadius="10" ShadowDepth="0" Opacity="0.9"/>
+                                                            </Border.Effect>
+                                                        </Border>
+
+                                                        <StackPanel Grid.Column="2">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Text="{Binding Email}" FontSize="12" FontWeight="SemiBold"
+                                                                           MaxWidth="200" TextTrimming="CharacterEllipsis"/>
+                                                                <Border Grid.Column="1" Margin="6,0,0,0" HorizontalAlignment="Left"
+                                                                        Style="{StaticResource PillBorder}"
+                                                                        Background="{StaticResource AccentButtonBrush}" BorderBrush="Transparent"
+                                                                        Visibility="{Binding IsActive, Converter={StaticResource BoolToVisibility}}">
+                                                                    <TextBlock Text="사용 중" FontSize="9" FontWeight="SemiBold"/>
+                                                                </Border>
+                                                                <Border Grid.Column="2" Style="{StaticResource PillBorder}">
+                                                                    <TextBlock Text="{Binding PlanLabel}" FontSize="9"
+                                                                               Foreground="{StaticResource AccentBrush}"/>
+                                                                </Border>
+                                                            </Grid>
+
+                                                            <Grid Margin="0,8,0,0">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="36"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="40"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="Auto"/>
+                                                                    <RowDefinition Height="5"/>
+                                                                    <RowDefinition Height="Auto"/>
+                                                                </Grid.RowDefinitions>
+
+                                                                <TextBlock Text="5시간" FontSize="9.5" Foreground="{StaticResource MutedBrush}"
+                                                                           VerticalAlignment="Center"/>
+                                                                <controls:UsageBar Grid.Column="1" Height="5" VerticalAlignment="Center"
+                                                                                   Target="{Binding PrimaryGauge}"
+                                                                                   FillBrush="{StaticResource BarGradientBrush}"
+                                                                                   LowBrush="{StaticResource LowGradientBrush}"/>
+                                                                <TextBlock Grid.Column="2" Text="{Binding PrimaryPercentText}" FontSize="10.5"
+                                                                           FontWeight="SemiBold" HorizontalAlignment="Right"/>
+
+                                                                <TextBlock Grid.Row="2" Text="주간" FontSize="9.5" Foreground="{StaticResource MutedBrush}"
+                                                                           VerticalAlignment="Center"/>
+                                                                <controls:UsageBar Grid.Row="2" Grid.Column="1" Height="5" VerticalAlignment="Center"
+                                                                                   Target="{Binding SecondaryGauge}"
+                                                                                   FillBrush="{StaticResource BarGradientBrush}"
+                                                                                   LowBrush="{StaticResource LowGradientBrush}"/>
+                                                                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding SecondaryPercentText}" FontSize="10.5"
+                                                                           HorizontalAlignment="Right" Foreground="{StaticResource MutedBrush}"/>
+                                                            </Grid>
+
+                                                            <TextBlock Margin="0,7,0,0" FontSize="9.5" Foreground="{StaticResource MutedBrush}"
+                                                                       TextTrimming="CharacterEllipsis">
+                                                                <Run Text="{Binding Status, Mode=OneWay}"/><Run Text="{Binding PrimaryResetLine, Mode=OneWay}"/>
+                                                            </TextBlock>
+                                                            <TextBlock Text="{Binding ExtraUsageText}" FontSize="9.5" Margin="0,2,0,0"
+                                                                       Foreground="#99B1A79E" TextTrimming="CharacterEllipsis"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Grid>
+                                            </Border>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Grid Grid.Row="3">
+                        <Button Content="＋  계정 추가" Height="36" Click="OnAddClicked">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource AccentButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsLoginPending}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="로그인 취소" Height="36" Foreground="{StaticResource DangerTextBrush}"
+                                Click="OnCancelLoginClicked">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource FlatButton}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsLoginPending}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock Grid.Row="4" Text="{Binding Message}" FontSize="9.5" Foreground="{StaticResource MutedBrush}"
+                               TextAlignment="Center" Margin="4,9,4,1" TextWrapping="Wrap"/>
+                </Grid>
+
+                <!-- 전환 진행 화면 -->
+                <Grid x:Name="SwitchingContent" MinHeight="236" Margin="6">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSwitching}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="300">
+                        <Grid Width="84" Height="84" HorizontalAlignment="Center">
+                            <Ellipse x:Name="SwitchGlow" Margin="-18" Fill="{StaticResource WarmGlowBrush}"/>
+                            <Ellipse Stroke="#1EFFFFFF" StrokeThickness="2"/>
+                            <Ellipse Stroke="{StaticResource CoralGradientBrush}" StrokeThickness="2.5"
+                                     StrokeDashArray="5,3.2" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <RotateTransform x:Name="OrbitOuterRotate"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <Ellipse Margin="13" Stroke="#88F6C177" StrokeThickness="1.4"
+                                     StrokeDashArray="1,3" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <RotateTransform x:Name="OrbitInnerRotate"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <!-- 공전하는 혜성 -->
+                            <Grid RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform>
+                                    <RotateTransform x:Name="CometRotate"/>
+                                </Grid.RenderTransform>
+                                <Ellipse Width="9" Height="9" VerticalAlignment="Top" Margin="0,-3,0,0" Fill="White">
+                                    <Ellipse.Effect>
+                                        <DropShadowEffect Color="#FFF3A27C" BlurRadius="14" ShadowDepth="0" Opacity="1"/>
+                                    </Ellipse.Effect>
+                                </Ellipse>
+                            </Grid>
+                            <controls:SparkGlyph Width="30" Height="30" Fill="{StaticResource CoralGradientBrush}"
+                                                 RenderTransformOrigin="0.5,0.5">
+                                <controls:SparkGlyph.RenderTransform>
+                                    <TransformGroup>
+                                        <ScaleTransform x:Name="SwitchSparkScale"/>
+                                        <RotateTransform x:Name="SwitchSparkRotate"/>
+                                    </TransformGroup>
+                                </controls:SparkGlyph.RenderTransform>
+                            </controls:SparkGlyph>
+                        </Grid>
+
+                        <TextBlock Text="Claude 계정을 전환하고 있습니다" FontSize="14.5" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" Margin="0,18,0,0"/>
+                        <TextBlock Text="{Binding SwitchingProfile.Email, TargetNullValue=선택한 계정}"
+                                   FontSize="11" Foreground="{StaticResource AccentBrush}"
+                                   HorizontalAlignment="Center" Margin="0,5,0,0"
+                                   TextTrimming="CharacterEllipsis" MaxWidth="290"/>
+
+                        <!-- 단계 표시 점 -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,14,0,10">
+                            <Ellipse Width="7" Height="7" Margin="4,0" Fill="{Binding SwitchStep, Converter={StaticResource StepBrush}, ConverterParameter=1}"/>
+                            <Ellipse Width="7" Height="7" Margin="4,0" Fill="{Binding SwitchStep, Converter={StaticResource StepBrush}, ConverterParameter=2}"/>
+                            <Ellipse Width="7" Height="7" Margin="4,0" Fill="{Binding SwitchStep, Converter={StaticResource StepBrush}, ConverterParameter=3}"/>
+                            <Ellipse Width="7" Height="7" Margin="4,0" Fill="{Binding SwitchStep, Converter={StaticResource StepBrush}, ConverterParameter=4}"/>
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding SwitchStage}" FontSize="10.5"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                        <TextBlock Text="완료될 때까지 위젯을 종료하지 마세요"
+                                   FontSize="9.5" Foreground="#66FFFFFF"
+                                   HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <Popup x:Name="AccountMenuPopup"
+               Placement="MousePoint"
+               AllowsTransparency="True" StaysOpen="False"
+               Opened="OnAccountMenuOpened">
+            <Border x:Name="AccountMenuSurface" Width="178" Margin="6" Padding="7"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="#3AFFFFFF" BorderThickness="1" CornerRadius="10">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.45"/>
+                </Border.Effect>
+                <StackPanel>
+                    <Button Content="이 계정 새로고침" Height="34" Margin="0,0,0,5"
+                            Style="{StaticResource FlatButton}" Click="OnRefreshOneClicked"/>
+                    <Button Content="이 계정 제거" Height="34"
+                            Foreground="{StaticResource DangerTextBrush}" Style="{StaticResource FlatButton}"
+                            Click="OnRemoveClicked"/>
+                </StackPanel>
+            </Border>
+        </Popup>
+    </Grid>
+</Window>
