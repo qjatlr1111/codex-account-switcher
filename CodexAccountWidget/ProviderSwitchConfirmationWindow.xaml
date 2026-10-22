@@ -11,9 +11,16 @@
         TextOptions.TextFormattingMode="Display"
         TextOptions.TextHintingMode="Fixed"
         TextOptions.TextRenderingMode="Grayscale">
-    <Border Margin="8" Padding="18" CornerRadius="12" Background="#F41F1F1F">
+    <Border Margin="8" Padding="18" CornerRadius="14" Background="{StaticResource PanelBrush}" BorderThickness="1">
+        <Border.BorderBrush>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#884FD8FF" Offset="0"/>
+                <GradientStop Color="#225B8CFF" Offset="0.4"/>
+                <GradientStop Color="#559B7BFF" Offset="1"/>
+            </LinearGradientBrush>
+        </Border.BorderBrush>
         <Border.Effect>
-            <DropShadowEffect BlurRadius="24" ShadowDepth="5" Opacity="0.5"/>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="6" Opacity="0.55" Color="#FF03050A"/>
         </Border.Effect>
         <StackPanel>
             <TextBlock Text="Model provider를 변경할까요?" FontSize="15" FontWeight="SemiBold"/>
@@ -21,7 +28,7 @@
                        Margin="0,5,0,14" FontSize="10.5"
                        Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"/>
 
-            <Border Padding="12,10" CornerRadius="9" Background="#20FFFFFF">
+            <Border Padding="12,10" CornerRadius="9" Background="#145B8CFF" BorderBrush="#2E8FB4FF" BorderThickness="1">
                 <StackPanel>
                     <TextBlock Text="변경할 provider" FontSize="9.5"
                                Foreground="{StaticResource MutedBrush}"/>
@@ -41,8 +48,7 @@
                 <Button Content="취소" Height="36" Style="{StaticResource FlatButton}"
                         IsCancel="True" Click="OnCancelClicked"/>
                 <Button Grid.Column="2" Content="이 provider로 변경" Height="36"
-                        Background="#FF4169A8" BorderBrush="Transparent"
-                        Style="{StaticResource FlatButton}" IsDefault="True"
+                        Style="{StaticResource AccentButton}" IsDefault="True"
                         Click="OnConfirmClicked"/>
             </Grid>
         </StackPanel>

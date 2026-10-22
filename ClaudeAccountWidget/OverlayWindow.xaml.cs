@@ -350,6 +350,11 @@ public partial class OverlayWindow : Window
         var left = taskbar.Left;
         if (TryGetCodexWidgetRight(taskbar, out var codexRight)) left = codexRight + 2;
 
+        // 전체화면 앱이나 시작 메뉴 등에 밀려 작업표시줄 뒤로 숨는 경우가 있어 z-order는 매번 다시 올립니다.
+        var handle = new WindowInteropHelper(this).Handle;
+        AttachToTaskbar(handle, taskbarHandle);
+        BringToTop(handle);
+
         var placementKey = $"{taskbar.Left},{taskbar.Top},{taskbar.Right},{taskbar.Bottom},{left}";
         if (!force && placementKey == _lastPlacementKey) return;
         _lastPlacementKey = placementKey;
@@ -365,13 +370,23 @@ public partial class OverlayWindow : Window
         Left = topLeft.X;
         Top = topLeft.Y;
 
-        var handle = new WindowInteropHelper(this).Handle;
-        AttachToTaskbar(handle, taskbarHandle);
-        // Left/Top/Width/Height는 WPF DIP 단위이므로 SetWindowPos는 z-order만 조정합니다.
-        SetWindowPos(handle, HwndTopmost, 0, 0, 0, 0, SwpNoSize | SwpNoMove | SwpNoActivate | SwpShowWindow);
+        BringToTop(handle);
         UpdateWidgetTextContrast(taskbar, left, source.CompositionTarget.TransformToDevice.M11);
 
         _panel?.Reposition(this);
+    }
+
+    private static void BringToTop(IntPtr handle)
+    {
+        if (handle == IntPtr.Zero) return;
+        // Left/Top/Width/Height는 WPF DIP 단위이므로 SetWindowPos는 z-order만 조정합니다.
+        SetWindowPos(handle, HwndTopmost, 0, 0, 0, 0, SwpNoSize | SwpNoMove | SwpNoActivate | SwpShowWindow);
+    }
+
+    // 패널이나 메뉴가 포커스를 가져갔다가 닫히면 위젯이 밀려날 수 있어 바로 다시 올립니다.
+    private void OnPopupVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is false && IsVisible) BringToTop(new WindowInteropHelper(this).Handle);
     }
 
     private static bool TryGetCodexWidgetRight(TaskbarLocator.NativeRect taskbar, out int right)
@@ -426,18 +441,28 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        _panel ??= new AccountPanelWindow(_viewModel, _diagnosticMode) { Owner = this };
+        if (_panel is null)
+        {
+            _panel = new AccountPanelWindow(_viewModel, _diagnosticMode) { Owner = this };
+            _panel.IsVisibleChanged += OnPopupVisibilityChanged;
+        }
+
         _panel.ShowAnimated(this);
     }
 
     private void OnOverlayRightClicked(object sender, MouseButtonEventArgs e)
     {
         _panel?.Hide();
-        _widgetMenu ??= new WidgetMenuWindow(
-            HideFromMenu,
-            ExitApplication,
-            ToggleAutoContrastAsync,
-            () => _viewModel.AutoAdjustWidgetTextColor);
+        if (_widgetMenu is null)
+        {
+            _widgetMenu = new WidgetMenuWindow(
+                HideFromMenu,
+                ExitApplication,
+                ToggleAutoContrastAsync,
+                () => _viewModel.AutoAdjustWidgetTextColor);
+            _widgetMenu.IsVisibleChanged += OnPopupVisibilityChanged;
+        }
+
         _widgetMenu.ShowMenu(this);
         e.Handled = true;
     }

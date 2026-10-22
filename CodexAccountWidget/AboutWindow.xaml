@@ -11,9 +11,16 @@
         TextOptions.TextFormattingMode="Display"
         TextOptions.TextHintingMode="Fixed"
         TextOptions.TextRenderingMode="Grayscale">
-    <Border Margin="8" Padding="20" CornerRadius="12" Background="#F41F1F1F">
+    <Border Margin="8" Padding="20" CornerRadius="14" Background="{StaticResource PanelBrush}" BorderThickness="1">
+        <Border.BorderBrush>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#884FD8FF" Offset="0"/>
+                <GradientStop Color="#225B8CFF" Offset="0.4"/>
+                <GradientStop Color="#559B7BFF" Offset="1"/>
+            </LinearGradientBrush>
+        </Border.BorderBrush>
         <Border.Effect>
-            <DropShadowEffect BlurRadius="24" ShadowDepth="5" Opacity="0.5"/>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="6" Opacity="0.55" Color="#FF03050A"/>
         </Border.Effect>
         <StackPanel>
             <TextBlock Text="Codex 계정 전환 위젯" FontSize="17" FontWeight="SemiBold"/>
@@ -23,7 +30,7 @@
             <TextBlock Text="작업 표시줄에서 Codex 계정과 사용량을 확인하고, 등록한 계정으로 전환하는 Windows 위젯입니다."
                        FontSize="11" TextWrapping="Wrap" LineHeight="17"/>
 
-            <Border Margin="0,14,0,0" Padding="12" CornerRadius="8" Background="#20FFFFFF">
+            <Border Margin="0,14,0,0" Padding="12" CornerRadius="8" Background="#145B8CFF" BorderBrush="#2E8FB4FF" BorderThickness="1">
                 <StackPanel>
                     <TextBlock Text="보안 안내" FontSize="10.5" FontWeight="SemiBold"/>
                     <TextBlock Margin="0,5,0,0" FontSize="10" TextWrapping="Wrap" LineHeight="15"
@@ -35,8 +42,7 @@
             <Button Content="GitHub 저장소 열기" Height="35" Margin="0,16,0,0"
                     Style="{StaticResource FlatButton}" Click="OnGitHubClicked"/>
             <Button Content="닫기" Height="35" Margin="0,8,0,0"
-                    Background="#FF4169A8" BorderBrush="Transparent"
-                    Style="{StaticResource FlatButton}" Click="OnCloseClicked"/>
+                    Style="{StaticResource AccentButton}" Click="OnCloseClicked"/>
         </StackPanel>
     </Border>
 </Window>

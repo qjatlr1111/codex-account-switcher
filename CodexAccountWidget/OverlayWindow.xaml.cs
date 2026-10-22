@@ -420,6 +420,12 @@ public partial class OverlayWindow : Window
                             taskbar.Top != _lastTaskbarBounds.Top ||
                             taskbar.Right != _lastTaskbarBounds.Right ||
                             taskbar.Bottom != _lastTaskbarBounds.Bottom;
+
+        // 전체화면 앱이나 시작 메뉴 등에 밀려 작업표시줄 뒤로 숨는 경우가 있어 z-order는 매번 다시 올립니다.
+        var handle = new WindowInteropHelper(this).Handle;
+        AttachToTaskbar(handle, taskbarHandle);
+        BringToTop(handle);
+
         if (!force && !boundsChanged) return;
         _lastTaskbarBounds = taskbar;
         _hasTaskbarBounds = true;
@@ -438,8 +444,15 @@ public partial class OverlayWindow : Window
 
         if (!IsVisible) Show();
 
-        var handle = new WindowInteropHelper(this).Handle;
-        AttachToTaskbar(handle, taskbarHandle);
+        BringToTop(handle);
+        UpdateWidgetTextContrast(taskbar, source.CompositionTarget.TransformToDevice.M11);
+
+        _panel?.Reposition(this);
+    }
+
+    private static void BringToTop(IntPtr handle)
+    {
+        if (handle == IntPtr.Zero) return;
         // Left, Top, Width, and Height are WPF device-independent units. Passing
         // them back to SetWindowPos as physical pixels makes the window shrink
         // on every timer tick when display scaling is enabled. WPF already
@@ -447,9 +460,12 @@ public partial class OverlayWindow : Window
         // z-order here.
         SetWindowPos(handle, HwndTopmost, 0, 0, 0, 0,
             SwpNoSize | SwpNoMove | SwpNoActivate | SwpShowWindow);
-        UpdateWidgetTextContrast(taskbar, source.CompositionTarget.TransformToDevice.M11);
+    }
 
-        _panel?.Reposition(this);
+    // 패널이나 메뉴가 포커스를 가져갔다가 닫히면 위젯이 밀려날 수 있어 바로 다시 올립니다.
+    private void OnPopupVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is false && IsVisible) BringToTop(new WindowInteropHelper(this).Handle);
     }
 
     private void UpdateWidgetTextContrast(TaskbarLocator.NativeRect taskbar, double scaleX)
@@ -481,8 +497,8 @@ public partial class OverlayWindow : Window
         if (taskbarHandle == IntPtr.Zero &&
             !TaskbarLocator.TryGetPrimaryTaskbar(out taskbarHandle, out _)) return;
 
-        // 작업 표시줄의 소유 창으로 연결하면 작업 표시줄을 클릭해도
-        // 위젯이 그 아래로 내려가지 않아 타이머 기반 복구가 필요하지 않습니다.
+        // 작업 표시줄의 소유 창으로 연결하면 작업 표시줄을 클릭해도 위젯이 그 아래로 내려가지 않습니다.
+        // 다만 전체화면 앱 등으로 작업 표시줄 자체가 내려가는 경우가 있어 PositionOverTaskbar에서 z-order를 계속 복구합니다.
         if (GetWindowLongPtr(windowHandle, GwlHwndParent) != taskbarHandle)
             SetWindowLongPtr(windowHandle, GwlHwndParent, taskbarHandle);
     }
@@ -492,7 +508,7 @@ public partial class OverlayWindow : Window
         _widgetMenu?.Hide();
         if (_panel is { IsVisible: true })
         {
-            _panel.Hide();
+            _panel.HideAnimated();
             return;
         }
 
@@ -502,6 +518,7 @@ public partial class OverlayWindow : Window
             {
                 Owner = this
             };
+            _panel.IsVisibleChanged += OnPopupVisibilityChanged;
         }
         _panel.ShowAnimated(this);
     }
@@ -509,11 +526,16 @@ public partial class OverlayWindow : Window
     private void OnOverlayRightClicked(object sender, MouseButtonEventArgs e)
     {
         _panel?.Hide();
-        _widgetMenu ??= new WidgetMenuWindow(
-            HideFromMenu,
-            ExitApplication,
-            ToggleAutoContrastAsync,
-            () => _viewModel.AutoAdjustWidgetTextColor);
+        if (_widgetMenu is null)
+        {
+            _widgetMenu = new WidgetMenuWindow(
+                HideFromMenu,
+                ExitApplication,
+                ToggleAutoContrastAsync,
+                () => _viewModel.AutoAdjustWidgetTextColor);
+            _widgetMenu.IsVisibleChanged += OnPopupVisibilityChanged;
+        }
+
         _widgetMenu.ShowMenu(this);
         e.Handled = true;
     }

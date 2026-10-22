@@ -29,7 +29,7 @@ jobs:
         id: version
         shell: powershell
         run: |
-          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '1.1.7' }
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '1.1.8' }
           "value=$version" >> $env:GITHUB_OUTPUT
 
       - name: 단일 EXE와 설치 파일 생성

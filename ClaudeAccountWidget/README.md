@@ -8,9 +8,9 @@ Codex 계정 위젯과 같은 방식으로 Windows 11 작업 표시줄 왼쪽에
 
 Claude 위젯은 Codex 위젯과 같은 저장소에서 `claude-v` 태그로 따로 배포합니다. 저장소의 "Latest" 표시는 Codex 위젯이 계속 쓰므로, Claude 위젯은 아래 버전별 링크로 받습니다.
 
-- [ClaudeAccountSwitcher-Setup.exe (claude-v1.0.0 설치 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.0/ClaudeAccountSwitcher-Setup.exe)
-- [ClaudeAccountSwitcher.exe (claude-v1.0.0 무설치 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.0/ClaudeAccountSwitcher.exe)
-- [SHA256SUMS.txt (claude-v1.0.0 무결성 확인 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.0/SHA256SUMS.txt)
+- [ClaudeAccountSwitcher-Setup.exe (claude-v1.0.1 설치 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.1/ClaudeAccountSwitcher-Setup.exe)
+- [ClaudeAccountSwitcher.exe (claude-v1.0.1 무설치 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.1/ClaudeAccountSwitcher.exe)
+- [SHA256SUMS.txt (claude-v1.0.1 무결성 확인 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.1/SHA256SUMS.txt)
 - [Claude 위젯 릴리스 전체 보기](https://github.com/qjatlr1111/codex-account-switcher/releases?q=claude-v&expanded=true)
 
 설치형은 Windows 로그인 자동 실행과 시작 메뉴·제거 프로그램이 함께 등록됩니다. 두 파일 모두 코드 서명되지 않아 처음 실행할 때 SmartScreen 경고가 나올 수 있습니다. 설치 후에는 트레이 메뉴의 `업데이트 확인`으로 새 `claude-v` 릴리스를 받아 SHA-256을 확인한 뒤 자동 설치합니다.
@@ -57,7 +57,7 @@ dotnet run --project ClaudeAccountWidget -- --diagnostic
 Inno Setup 6이 설치된 Windows에서 루트의 `Build-ClaudeInstaller.cmd`를 실행하거나 PowerShell에서 실행합니다.
 
 ```powershell
-./scripts/Build-ClaudeInstaller.ps1 -ApplicationVersion 1.0.0
+./scripts/Build-ClaudeInstaller.ps1 -ApplicationVersion 1.0.1
 ```
 
 ```text
@@ -69,7 +69,7 @@ dist/claude/
 
 ## GitHub 배포
 
-[`.github/workflows/claude-release.yml`](../.github/workflows/claude-release.yml)이 `claude-v1.0.0` 같은 태그를 받으면 Windows runner에서 위 세 파일을 만들어 GitHub Release에 올립니다.
+[`.github/workflows/claude-release.yml`](../.github/workflows/claude-release.yml)이 `claude-v1.0.1` 같은 태그를 받으면 Windows runner에서 위 세 파일을 만들어 GitHub Release에 올립니다.
 
 - Codex 워크플로(`release.yml`)는 `v*.*.*` 태그에만 반응하므로 두 앱의 빌드가 섞이지 않습니다.
 - Claude 릴리스는 항상 `--latest=false`로 게시합니다. 그래서 Codex의 `releases/latest/download/...` 링크와 Codex 앱 업데이트 확인은 계속 Codex 릴리스를 가리킵니다.
@@ -79,8 +79,8 @@ dist/claude/
 git add .
 git commit -m "Claude 계정 위젯 추가"
 git push
-git tag claude-v1.0.0
-git push origin claude-v1.0.0
+git tag claude-v1.0.1
+git push origin claude-v1.0.1
 ```
 
 배포 전에는 저장소의 `AGENTS.md` 규칙대로 변경 파일·패키지에 인증 파일이나 개인 정보가 없는지 점검합니다.

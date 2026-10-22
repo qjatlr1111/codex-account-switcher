@@ -3,39 +3,146 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
-        <SolidColorBrush x:Key="PanelBrush" Color="#F21F1F1F"/>
-        <SolidColorBrush x:Key="CardBrush" Color="#FF2A2A2A"/>
-        <SolidColorBrush x:Key="HoverBrush" Color="#FF353535"/>
-        <SolidColorBrush x:Key="AccentBrush" Color="#FF7CA7FF"/>
-        <SolidColorBrush x:Key="MutedBrush" Color="#FFA7A7A7"/>
+        <!-- 차가운 잉크 다크 톤 + 시안 → 블루 → 바이올렛 네온 팔레트 -->
+        <Color x:Key="CyanColor">#FF4FD8FF</Color>
+        <Color x:Key="BlueColor">#FF5B8CFF</Color>
+        <Color x:Key="VioletColor">#FF9B7BFF</Color>
+        <Color x:Key="DangerColor">#FFFF6B7A</Color>
+
+        <SolidColorBrush x:Key="PanelBrush" Color="#F40C0F16"/>
+        <SolidColorBrush x:Key="CardBrush" Color="#FF151A24"/>
+        <SolidColorBrush x:Key="HoverBrush" Color="#FF1E2533"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#FF8FB4FF"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#FF8E98AC"/>
+        <SolidColorBrush x:Key="FaintBrush" Color="#26FFFFFF"/>
+        <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}"/>
+        <SolidColorBrush x:Key="DangerTextBrush" Color="#FFFFB3BC"/>
+
+        <LinearGradientBrush x:Key="NeonGradientBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="{StaticResource CyanColor}" Offset="0"/>
+            <GradientStop Color="{StaticResource BlueColor}" Offset="0.5"/>
+            <GradientStop Color="{StaticResource VioletColor}" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="BarGradientBrush" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="{StaticResource VioletColor}" Offset="0"/>
+            <GradientStop Color="{StaticResource BlueColor}" Offset="0.55"/>
+            <GradientStop Color="{StaticResource CyanColor}" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="LowGradientBrush" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#FFE5484D" Offset="0"/>
+            <GradientStop Color="#FFFF8FA3" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="AccentButtonBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#FF3F6FE8" Offset="0"/>
+            <GradientStop Color="#FF6A4FE0" Offset="1"/>
+        </LinearGradientBrush>
+        <RadialGradientBrush x:Key="NeonGlowBrush">
+            <GradientStop Color="#665B8CFF" Offset="0"/>
+            <GradientStop Color="#005B8CFF" Offset="1"/>
+        </RadialGradientBrush>
+        <RadialGradientBrush x:Key="CyanGlowBrush">
+            <GradientStop Color="#554FD8FF" Offset="0"/>
+            <GradientStop Color="#004FD8FF" Offset="1"/>
+        </RadialGradientBrush>
+
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+
         <Style TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Segoe UI"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, Malgun Gothic"/>
+            <Setter Property="Foreground" Value="#FFF2F5FF"/>
             <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
             <Setter Property="TextOptions.TextHintingMode" Value="Fixed"/>
             <Setter Property="TextOptions.TextRenderingMode" Value="Grayscale"/>
             <Setter Property="UseLayoutRounding" Value="True"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
         </Style>
+
+        <Style x:Key="MonoText" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Cascadia Code, Consolas"/>
+        </Style>
+
         <Style x:Key="FlatButton" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Background" Value="#FF303030"/>
-            <Setter Property="BorderBrush" Value="#24FFFFFF"/>
+            <Setter Property="Background" Value="#FF161C27"/>
+            <Setter Property="BorderBrush" Value="#26A8C4FF"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="10,7"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Root" Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
+                        <Grid x:Name="Body" RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform/>
+                            </Grid.RenderTransform>
+                            <Border x:Name="Root" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8"/>
+                            <!-- 호버 시 네온 테두리와 차가운 하이라이트가 켜집니다 -->
+                            <Border x:Name="Sheen" CornerRadius="8" Opacity="0" IsHitTestVisible="False"
+                                    BorderThickness="1">
+                                <Border.BorderBrush>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#994FD8FF" Offset="0"/>
+                                        <GradientStop Color="#225B8CFF" Offset="0.5"/>
+                                        <GradientStop Color="#669B7BFF" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.BorderBrush>
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#228FB4FF" Offset="0"/>
+                                        <GradientStop Color="#06FFFFFF" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="{StaticResource HoverBrush}"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Sheen" Storyboard.TargetProperty="Opacity"
+                                                             To="1" Duration="0:0:0.14"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Sheen" Storyboard.TargetProperty="Opacity"
+                                                             To="0" Duration="0:0:0.2"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Body" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="0.96" Duration="0:0:0.06"/>
+                                            <DoubleAnimation Storyboard.TargetName="Body" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="0.96" Duration="0:0:0.06"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Body" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.25">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <ElasticEase Oscillations="1" Springiness="5"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="Body" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.25">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <ElasticEase Oscillations="1" Springiness="5"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.45"/>
@@ -44,6 +151,21 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource FlatButton}">
+            <Setter Property="Background" Value="{StaticResource AccentButtonBrush}"/>
+            <Setter Property="BorderBrush" Value="#408FB4FF"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <Style x:Key="PillBorder" TargetType="Border">
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="5,0,5,1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#205B8CFF"/>
+            <Setter Property="BorderBrush" Value="#405B8CFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
         </Style>
     </Application.Resources>
 </Application>

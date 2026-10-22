@@ -31,7 +31,7 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.Substring('claude-v'.Length) } else { '1.0.0' }
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.Substring('claude-v'.Length) } else { '1.0.1' }
           "value=$version" >> $env:GITHUB_OUTPUT
 
       - name: 단일 EXE와 설치 파일 생성

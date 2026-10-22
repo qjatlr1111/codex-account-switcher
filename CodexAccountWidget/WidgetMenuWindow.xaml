@@ -13,9 +13,16 @@
         Deactivated="OnDeactivated">
     <Border Margin="6" Padding="7"
             Background="{StaticResource PanelBrush}"
-            BorderBrush="#3AFFFFFF" BorderThickness="1" CornerRadius="10">
+            BorderThickness="1" CornerRadius="12">
+        <Border.BorderBrush>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#884FD8FF" Offset="0"/>
+                <GradientStop Color="#225B8CFF" Offset="0.4"/>
+                <GradientStop Color="#559B7BFF" Offset="1"/>
+            </LinearGradientBrush>
+        </Border.BorderBrush>
         <Border.Effect>
-            <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.45"/>
+            <DropShadowEffect BlurRadius="22" ShadowDepth="5" Opacity="0.55" Color="#FF03050A"/>
         </Border.Effect>
         <StackPanel>
             <CheckBox x:Name="AutoContrastCheckBox"
@@ -26,7 +33,7 @@
             <Button Content="위젯 숨기기" Height="34" Margin="0,0,0,5"
                     Style="{StaticResource FlatButton}" Click="OnHideClicked"/>
             <Button Content="프로그램 끝내기" Height="34"
-                    Foreground="#FFFFB4AB" Style="{StaticResource FlatButton}"
+                    Foreground="{StaticResource DangerTextBrush}" Style="{StaticResource FlatButton}"
                     Click="OnExitClicked"/>
         </StackPanel>
     </Border>
