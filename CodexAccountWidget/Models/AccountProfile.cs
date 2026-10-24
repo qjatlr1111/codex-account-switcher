@@ -49,6 +49,7 @@ public sealed class AccountProfile : INotifyPropertyChanged
             OnPropertyChanged(nameof(SecondaryGauge));
             OnPropertyChanged(nameof(SecondaryPercentText));
             OnPropertyChanged(nameof(IsLow));
+            OnPropertyChanged(nameof(HasSecondary));
         }
     }
 
@@ -73,6 +74,9 @@ public sealed class AccountProfile : INotifyPropertyChanged
     /// <summary>게이지 컨트롤용 값입니다. 알 수 없으면 -1을 돌려줍니다.</summary>
     [JsonIgnore] public double PrimaryGauge => PrimaryRemaining ?? -1;
     [JsonIgnore] public double SecondaryGauge => SecondaryRemaining ?? -1;
+
+    /// <summary>요금제에 따라 사용량 창이 하나(주간)만 오면 두 번째 줄을 숨깁니다.</summary>
+    [JsonIgnore] public bool HasSecondary => SecondaryRemaining is not null;
 
     [JsonIgnore]
     public bool IsLow => PrimaryRemaining is <= LowThreshold || SecondaryRemaining is <= LowThreshold;

@@ -1,7 +1,7 @@
 param(
     [string]$Configuration = 'Release',
     [string]$Runtime = 'win-x64',
-    [string]$ApplicationVersion = '1.0.1'
+    [string]$ApplicationVersion = '1.0.2'
 )
 
 # Builds the Claude widget portable EXE, Inno Setup installer and SHA256SUMS.txt.

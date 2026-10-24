@@ -68,13 +68,25 @@ public sealed class AccountProfile : INotifyPropertyChanged
             if (!Set(ref _primaryResetsAt, value)) return;
             OnPropertyChanged(nameof(PrimaryResetText));
             OnPropertyChanged(nameof(PrimaryResetLine));
+            OnPropertyChanged(nameof(PrimaryText));
+            OnPropertyChanged(nameof(PrimaryPercentText));
+            OnPropertyChanged(nameof(PrimaryGauge));
+            OnPropertyChanged(nameof(IsLow));
         }
     }
 
     public DateTimeOffset? SecondaryResetsAt
     {
         get => _secondaryResetsAt;
-        set { if (Set(ref _secondaryResetsAt, value)) OnPropertyChanged(nameof(SecondaryResetText)); }
+        set
+        {
+            if (!Set(ref _secondaryResetsAt, value)) return;
+            OnPropertyChanged(nameof(SecondaryResetText));
+            OnPropertyChanged(nameof(SecondaryText));
+            OnPropertyChanged(nameof(SecondaryPercentText));
+            OnPropertyChanged(nameof(SecondaryGauge));
+            OnPropertyChanged(nameof(IsLow));
+        }
     }
 
     public string ExtraUsageText { get => _extraUsageText; set => Set(ref _extraUsageText, value); }
@@ -89,15 +101,20 @@ public sealed class AccountProfile : INotifyPropertyChanged
 
     [JsonIgnore] public string PrimaryText => $"5시간 {PrimaryPercentText}";
     [JsonIgnore] public string SecondaryText => $"주간 {SecondaryPercentText}";
-    [JsonIgnore] public string PrimaryPercentText => PrimaryRemaining is null ? "--" : $"{PrimaryRemaining}%";
-    [JsonIgnore] public string SecondaryPercentText => SecondaryRemaining is null ? "--" : $"{SecondaryRemaining}%";
+    [JsonIgnore] public string PrimaryPercentText => CurrentPrimary is null ? "--" : $"{CurrentPrimary}%";
+    [JsonIgnore] public string SecondaryPercentText => CurrentSecondary is null ? "--" : $"{CurrentSecondary}%";
 
     /// <summary>게이지 컨트롤용 값입니다. 알 수 없으면 -1을 돌려줍니다.</summary>
-    [JsonIgnore] public double PrimaryGauge => PrimaryRemaining ?? -1;
-    [JsonIgnore] public double SecondaryGauge => SecondaryRemaining ?? -1;
+    [JsonIgnore] public double PrimaryGauge => CurrentPrimary ?? -1;
+    [JsonIgnore] public double SecondaryGauge => CurrentSecondary ?? -1;
 
     [JsonIgnore]
-    public bool IsLow => PrimaryRemaining is <= LowThreshold || SecondaryRemaining is <= LowThreshold;
+    public bool IsLow => CurrentPrimary is <= LowThreshold || CurrentSecondary is <= LowThreshold;
+
+    // 초기화 시각이 지난 값은 다음 조회 전까지 "알 수 없음"으로 표시합니다.
+    private int? CurrentPrimary => IsPast(PrimaryResetsAt) ? null : PrimaryRemaining;
+    private int? CurrentSecondary => IsPast(SecondaryResetsAt) ? null : SecondaryRemaining;
+    private static bool IsPast(DateTimeOffset? resetsAt) => resetsAt is { } at && at <= DateTimeOffset.Now;
 
     [JsonIgnore] public string PrimaryResetText => FormatReset(PrimaryResetsAt);
     [JsonIgnore] public string SecondaryResetText => FormatReset(SecondaryResetsAt);
@@ -111,6 +128,13 @@ public sealed class AccountProfile : INotifyPropertyChanged
         OnPropertyChanged(nameof(PrimaryResetText));
         OnPropertyChanged(nameof(SecondaryResetText));
         OnPropertyChanged(nameof(PrimaryResetLine));
+        OnPropertyChanged(nameof(PrimaryText));
+        OnPropertyChanged(nameof(SecondaryText));
+        OnPropertyChanged(nameof(PrimaryPercentText));
+        OnPropertyChanged(nameof(SecondaryPercentText));
+        OnPropertyChanged(nameof(PrimaryGauge));
+        OnPropertyChanged(nameof(SecondaryGauge));
+        OnPropertyChanged(nameof(IsLow));
     }
 
     private static string FormatReset(DateTimeOffset? resetsAt)

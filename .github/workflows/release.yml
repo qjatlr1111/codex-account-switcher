@@ -29,7 +29,7 @@ jobs:
         id: version
         shell: powershell
         run: |
-          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '1.1.8' }
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '1.1.9' }
           "value=$version" >> $env:GITHUB_OUTPUT
 
       - name: 단일 EXE와 설치 파일 생성
@@ -56,10 +56,7 @@ jobs:
           $releaseNotes = @'
           ## 주요 변경
 
-          - 전체화면 앱이나 시작 메뉴 이후 위젯이 작업 표시줄 뒤로 숨는 문제 수정 (계정 패널·메뉴를 닫을 때도 위젯을 다시 맨 위로 올림)
-          - 위젯 디자인 전면 개편: 새 색상 팔레트, 오버레이·계정 패널·메뉴·확인 창·정보 창 레이아웃 정리
-          - 사용량 게이지와 막대를 새로 그리고, 잔여량이 15% 이하이면 부족 표시
-          - 패널 등장과 계정 목록에 부드러운 애니메이션 추가
+          - 주간 사용량 창 하나만 제공되는 요금제(Pro Lite, Free 등)에서 비어 있던 두 번째 사용량 줄을 숨김
 
           ## 보안 및 호환성 안내
 

@@ -23,8 +23,8 @@ Windows 11 작업 표시줄의 왼쪽 영역을 덮어 현재 Codex 계정과 �
 
 같은 저장소의 [`ClaudeAccountWidget`](ClaudeAccountWidget/README.md)는 이 위젯을 Claude용으로 옮긴 버전입니다. 작업 표시줄에서 현재 Claude 계정과 5시간·주간 잔여량을 링 게이지로 보여주고, 등록한 계정으로 Claude Code 로그인을 전환합니다. Codex 위젯과 함께 실행하면 그 오른쪽에 나란히 붙습니다.
 
-- [ClaudeAccountSwitcher-Setup.exe (claude-v1.0.1 설치 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.1/ClaudeAccountSwitcher-Setup.exe)
-- [ClaudeAccountSwitcher.exe (claude-v1.0.1 무설치 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.1/ClaudeAccountSwitcher.exe)
+- [ClaudeAccountSwitcher-Setup.exe (claude-v1.0.2 설치 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.2/ClaudeAccountSwitcher-Setup.exe)
+- [ClaudeAccountSwitcher.exe (claude-v1.0.2 무설치 파일)](https://github.com/qjatlr1111/codex-account-switcher/releases/download/claude-v1.0.2/ClaudeAccountSwitcher.exe)
 - [Claude 위젯 릴리스 전체 보기](https://github.com/qjatlr1111/codex-account-switcher/releases?q=claude-v&expanded=true)
 
 Claude 위젯은 `claude-v` 태그로 따로 배포하며 "Latest" 릴리스로 표시하지 않습니다. 위의 Codex 다운로드 링크(`releases/latest`)는 계속 Codex 위젯을 가리킵니다. 소스에서는 루트의 `run-claude.cmd`로 실행하고, 배포 파일은 `Build-ClaudeInstaller.cmd`로 만듭니다.
@@ -93,7 +93,7 @@ Build-Installer.cmd
 또는 PowerShell에서 실행합니다.
 
 ```powershell
-./scripts/Build-Installer.ps1 -ApplicationVersion 1.1.8
+./scripts/Build-Installer.ps1 -ApplicationVersion 1.1.9
 ```
 
 출력은 다음과 같습니다.

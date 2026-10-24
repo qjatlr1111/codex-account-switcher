@@ -5,7 +5,7 @@
   #error OutputDir must be provided.
 #endif
 #ifndef ApplicationVersion
-  #define ApplicationVersion "1.0.1"
+  #define ApplicationVersion "1.0.2"
 #endif
 
 [Setup]

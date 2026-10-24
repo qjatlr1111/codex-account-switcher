@@ -134,8 +134,12 @@ public sealed class ClaudeProcessMonitor
             path.Contains(@"\Programs\Claude\", StringComparison.OrdinalIgnoreCase))
             return ClaudeProcessKind.Desktop;
 
+        // Store(MSIX)판 데스크톱 앱은 %LOCALAPPDATA%\Claude-Data\claude_<id>\claude-code\<버전>\에서 실행합니다.
+        // 이 세션은 데스크톱 앱 자체 로그인을 쓰므로 ~/.claude 인증 파일을 갱신하지 않습니다.
         if (path.Contains(@"\Claude\claude-code", StringComparison.OrdinalIgnoreCase) ||
-            path.Contains(@"\Claude\claude-code-vm", StringComparison.OrdinalIgnoreCase))
+            path.Contains(@"\Claude\claude-code-vm", StringComparison.OrdinalIgnoreCase) ||
+            (path.Contains(@"\Claude-Data\", StringComparison.OrdinalIgnoreCase) &&
+             path.Contains(@"\claude-code", StringComparison.OrdinalIgnoreCase)))
             return ClaudeProcessKind.DesktopManagedCode;
 
         // 경로를 읽지 못한 경우: 창이 있는 claude는 데스크톱 앱일 가능성이 높으므로 보수적으로 판단합니다.

@@ -207,7 +207,8 @@
                         <TextBlock Text="{Binding ActiveProfile.PrimaryText, TargetNullValue=사용량 --}" FontSize="10.5"
                                    HorizontalAlignment="Right"/>
                         <TextBlock Text="{Binding ActiveProfile.SecondaryText}" FontSize="9.5"
-                                   HorizontalAlignment="Right" Foreground="{DynamicResource WidgetSecondaryTextBrush}"/>
+                                   HorizontalAlignment="Right" Foreground="{DynamicResource WidgetSecondaryTextBrush}"
+                                   Visibility="{Binding ActiveProfile.HasSecondary, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}"/>
                     </StackPanel>
 
                     <!-- Model provider 연결 -->

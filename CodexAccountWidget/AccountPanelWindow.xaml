@@ -434,13 +434,16 @@
                                                                            FontWeight="SemiBold" HorizontalAlignment="Right"/>
 
                                                                 <TextBlock Grid.Row="2" Text="{Binding SecondaryLabel}" FontSize="9.5" Foreground="{StaticResource MutedBrush}"
-                                                                           VerticalAlignment="Center"/>
+                                                                           VerticalAlignment="Center"
+                                                                           Visibility="{Binding HasSecondary, Converter={StaticResource BoolToVisibility}}"/>
                                                                 <controls:UsageBar Grid.Row="2" Grid.Column="1" Height="5" VerticalAlignment="Center"
+                                                                                   Visibility="{Binding HasSecondary, Converter={StaticResource BoolToVisibility}}"
                                                                                    Target="{Binding SecondaryGauge}"
                                                                                    TrackBrush="#228FB4FF"
                                                                                    FillBrush="{StaticResource BarGradientBrush}"
                                                                                    LowBrush="{StaticResource LowGradientBrush}"/>
                                                                 <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding SecondaryPercentText}" FontSize="10.5"
+                                                                           Visibility="{Binding HasSecondary, Converter={StaticResource BoolToVisibility}}"
                                                                            Style="{StaticResource MonoText}"
                                                                            HorizontalAlignment="Right" Foreground="{StaticResource MutedBrush}"/>
                                                             </Grid>
